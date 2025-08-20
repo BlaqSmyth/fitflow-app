@@ -2,7 +2,17 @@
 
 ## Overview
 
-FitFlow is a comprehensive fitness application that combines video-based workout sessions with progress tracking and user management. The application provides users with access to 90+ premium workouts across multiple categories, featuring a workout player with video playback capabilities, detailed exercise tracking through workout sheets, and comprehensive progress analytics. Built as a mobile-first progressive web application, FitFlow offers an intuitive interface for users to discover, follow, and track their fitness journey.
+FitFlow is a P90X3-inspired fitness application featuring a complete 90-day workout challenge with 30-minute daily workout videos. The application provides users with a structured fitness program across four workout categories (Mass, Lean, Double, Classic), featuring a workout player with video playback capabilities, detailed exercise tracking through workout sheets, and comprehensive progress analytics. Built as a mobile-first progressive web application, FitFlow offers an intuitive interface for users to follow their daily workout routine and track their 90-day transformation journey.
+
+## Recent Changes
+
+### P90X3-Style 90-Day Challenge Implementation (January 2025)
+- **Database Schema Updates**: Enhanced workouts table with `dayNumber` (1-90) and `weekNumber` (1-13) fields for structured challenge progression
+- **90-Day Workout Structure**: Created 90 unique 30-minute workout videos organized across 4 rotating categories
+- **Progressive Difficulty System**: Implemented beginner (days 1-30), intermediate (days 31-60), and advanced (days 61-90) difficulty levels
+- **Challenge Progress Tracking**: Updated home page with 90-day challenge overview showing completion percentage, days remaining, and streak tracking
+- **Today's Workout Feature**: Added dedicated section for current day's workout with clear day indicators
+- **Seeding System**: Implemented automated database seeding with sample workout data for immediate testing
 
 ## User Preferences
 

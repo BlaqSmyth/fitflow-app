@@ -79,7 +79,7 @@ export default function Home() {
     ? `${user.firstName} ${user.lastName}`
     : user?.email || "User";
 
-  const todayProgress = progress?.totalWorkouts ? Math.min((progress.totalWorkouts % 10) * 10, 100) : 0;
+  const todayProgress = progress.totalWorkouts ? Math.min((progress.totalWorkouts % 10) * 10, 100) : 0;
 
   const categoryIcons = {
     'Mass': Dumbbell,
@@ -126,38 +126,105 @@ export default function Home() {
       </header>
 
       <main className="px-6 space-y-6">
-        {/* Progress Overview */}
+        {/* 90-Day Challenge Overview */}
         <section className="mt-6">
-          <Card className="bg-surface border-slate-700">
+          <Card className="bg-gradient-to-r from-primary/20 to-accent/20 border-primary/30">
             <CardContent className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-white">Today's Progress</h2>
-                <span className="text-primary font-semibold">{todayProgress}%</span>
+                <div>
+                  <h2 className="text-xl font-bold text-white">90-Day Challenge</h2>
+                  <p className="text-sm text-slate-300">30 minutes daily • Transform your fitness</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-primary">{progress.totalWorkouts}/90</p>
+                  <p className="text-sm text-slate-300">Days Complete</p>
+                </div>
               </div>
-              <Progress value={todayProgress} className="mb-4" />
+              <Progress value={(progress.totalWorkouts / 90) * 100} className="mb-4" />
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-primary">{progress?.totalWorkouts || 0}</p>
-                  <p className="text-sm text-slate-400">Workouts</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-accent">{progress?.totalCalories || 0}</p>
-                  <p className="text-sm text-slate-400">Calories</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-emerald-500">{progress?.workoutStreak || 0}</p>
+                  <p className="text-2xl font-bold text-primary">{progress.workoutStreak}</p>
                   <p className="text-sm text-slate-400">Day Streak</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-accent">{progress.totalCalories}</p>
+                  <p className="text-sm text-slate-400">Calories Burned</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-emerald-500">{Math.ceil((90 - progress.totalWorkouts) / 7)}</p>
+                  <p className="text-sm text-slate-400">Weeks Left</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </section>
 
+        {/* Today's Workout */}
+        <section>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-white">Today's Workout</h2>
+            <Badge variant="secondary" className="bg-primary/20 text-primary">
+              Day {Math.min(progress.totalWorkouts + 1, 90)}
+            </Badge>
+          </div>
+          {featuredWorkouts.length > 0 && (
+            <Link href={`/workout-player/${featuredWorkouts[0].id}`}>
+              <Card className="bg-surface border-slate-700 overflow-hidden hover:border-primary/50 transition-colors cursor-pointer">
+                <div className="aspect-video bg-slate-700 relative">
+                  {featuredWorkouts[0].thumbnailUrl && (
+                    <img 
+                      src={featuredWorkouts[0].thumbnailUrl} 
+                      alt={featuredWorkouts[0].title}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
+                      <Play className="w-6 h-6 text-white ml-1" />
+                    </div>
+                  </div>
+                  <div className="absolute top-4 left-4">
+                    <Badge className="bg-primary text-white">30 min</Badge>
+                  </div>
+                  <div className="absolute top-4 right-4 flex space-x-2">
+                    <Badge variant="secondary" className="bg-black/50 text-white">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {Math.floor(featuredWorkouts[0].duration / 60)} min
+                    </Badge>
+                    <Badge variant="secondary" className="bg-black/50 text-white">
+                      <Flame className="w-3 h-3 mr-1" />
+                      {featuredWorkouts[0].calories} cal
+                    </Badge>
+                  </div>
+                </div>
+                <CardContent className="p-4">
+                  <h3 className="font-bold text-lg mb-2 text-white">{featuredWorkouts[0].title}</h3>
+                  <p className="text-slate-400 text-sm mb-3">{featuredWorkouts[0].description}</p>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-4 text-sm text-slate-400">
+                      <span className="flex items-center">
+                        <Star className="w-4 h-4 mr-1 text-yellow-500" />
+                        {featuredWorkouts[0].rating}
+                      </span>
+                      <Badge variant="outline" className="text-primary border-primary/30">
+                        {featuredWorkouts[0].difficulty}
+                      </Badge>
+                    </div>
+                    <Button className="bg-gradient-to-r from-primary to-accent text-white">
+                      Start Workout
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
+        </section>
+
         {/* Workout Categories */}
         <section>
           <h2 className="text-xl font-bold mb-4 text-white">Workout Programs</h2>
           <div className="grid grid-cols-2 gap-4">
-            {categories?.map((category) => {
+            {categories.map((category: WorkoutCategory) => {
               const IconComponent = categoryIcons[category.name as keyof typeof categoryIcons] || Dumbbell;
               const colorClass = categoryColors[category.name as keyof typeof categoryColors] || 'text-primary';
               
@@ -189,7 +256,7 @@ export default function Home() {
           </div>
           
           <div className="space-y-4">
-            {featuredWorkouts?.slice(0, 2).map((workout) => (
+            {featuredWorkouts.slice(0, 2).map((workout: Workout) => (
               <Link key={workout.id} href={`/workout-player/${workout.id}`}>
                 <Card className="bg-surface border-slate-700 overflow-hidden hover:border-primary/50 transition-colors cursor-pointer">
                   <div className="aspect-video bg-slate-700 relative">
