@@ -19,6 +19,7 @@ import {
   Heart
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import type { WorkoutCategory, Workout } from "@shared/schema";
 
 export default function Workouts() {
   const { toast } = useToast();
@@ -51,12 +52,12 @@ export default function Workouts() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: categories } = useQuery({
+  const { data: categories = [] } = useQuery<WorkoutCategory[]>({
     queryKey: ["/api/categories"],
     retry: false,
   });
 
-  const { data: workouts } = useQuery({
+  const { data: workouts = [] } = useQuery<Workout[]>({
     queryKey: selectedCategory === "all" ? ["/api/workouts"] : ["/api/workouts", selectedCategory],
     retry: false,
   });
@@ -67,13 +68,13 @@ export default function Workouts() {
     </div>;
   }
 
-  const filteredWorkouts = workouts?.filter(workout =>
+  const filteredWorkouts = workouts.filter((workout: Workout) =>
     workout.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     workout.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  );
 
   const getCategoryName = (categoryId: string) => {
-    return categories?.find(cat => cat.id === categoryId)?.name || '';
+    return categories.find((cat: WorkoutCategory) => cat.id === categoryId)?.name || '';
   };
 
   return (

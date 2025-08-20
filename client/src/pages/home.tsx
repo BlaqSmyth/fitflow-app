@@ -22,6 +22,14 @@ import {
   ClipboardList,
   BarChart3
 } from "lucide-react";
+import type { User, WorkoutCategory, Workout } from "@shared/schema";
+
+interface UserProgress {
+  totalWorkouts: number;
+  totalCalories: number;
+  workoutStreak: number;
+  completedToday: boolean;
+}
 
 export default function Home() {
   const { toast } = useToast();
@@ -42,17 +50,17 @@ export default function Home() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: categories } = useQuery({
+  const { data: categories = [] } = useQuery<WorkoutCategory[]>({
     queryKey: ["/api/categories"],
     retry: false,
   });
 
-  const { data: featuredWorkouts } = useQuery({
+  const { data: featuredWorkouts = [] } = useQuery<Workout[]>({
     queryKey: ["/api/workouts/featured"],
     retry: false,
   });
 
-  const { data: progress } = useQuery({
+  const { data: progress = { totalWorkouts: 0, totalCalories: 0, workoutStreak: 0, completedToday: false } } = useQuery<UserProgress>({
     queryKey: ["/api/progress"],
     retry: false,
   });

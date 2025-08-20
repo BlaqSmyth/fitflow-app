@@ -52,13 +52,15 @@ export const workouts = pgTable("workouts", {
   description: text("description"),
   videoUrl: varchar("video_url").notNull(),
   thumbnailUrl: varchar("thumbnail_url"),
-  duration: integer("duration").notNull(), // in seconds
+  duration: integer("duration").notNull().default(1800), // 30 minutes in seconds
   difficulty: varchar("difficulty").notNull(), // beginner, intermediate, advanced
-  calories: integer("calories"),
+  calories: integer("calories").default(200),
   equipment: text("equipment"),
   instructor: varchar("instructor"),
   categoryId: varchar("category_id").references(() => workoutCategories.id),
-  rating: decimal("rating", { precision: 3, scale: 2 }),
+  rating: decimal("rating", { precision: 3, scale: 2 }).default("4.5"),
+  dayNumber: integer("day_number"), // Day 1-90 for challenge structure
+  weekNumber: integer("week_number"), // Week 1-13 for organization  
   createdAt: timestamp("created_at").defaultNow(),
 });
 

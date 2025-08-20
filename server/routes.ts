@@ -220,6 +220,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Seed data endpoint (development only)
+  app.post('/api/seed', async (req, res) => {
+    try {
+      if (process.env.NODE_ENV !== 'development') {
+        return res.status(403).json({ message: "Seeding only allowed in development" });
+      }
+      
+      await storage.seedInitialData();
+      res.json({ message: "Database seeded successfully with 90-day challenge data" });
+    } catch (error) {
+      console.error("Error seeding database:", error);
+      res.status(500).json({ message: "Failed to seed database" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

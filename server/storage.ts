@@ -170,7 +170,7 @@ export class DatabaseStorage implements IStorage {
       .from(userWorkoutSessions)
       .where(and(
         eq(userWorkoutSessions.userId, userId),
-        eq(userWorkoutSessions.completedAt, null)
+        sql`${userWorkoutSessions.completedAt} IS NULL`
       ));
     return session;
   }
@@ -271,6 +271,69 @@ export class DatabaseStorage implements IStorage {
         eq(favoriteWorkouts.workoutId, workoutId)
       ));
     return !!favorite;
+  }
+
+  // Seed initial data for 90-day challenge
+  async seedInitialData(): Promise<void> {
+    // Create workout categories
+    const categories = [
+      {
+        name: "Mass",
+        description: "Build muscle and gain strength with intensive workouts",
+        icon: "dumbbell",
+        color: "#FF6B35"
+      },
+      {
+        name: "Lean",
+        description: "Burn fat and get lean with high-intensity training",
+        icon: "zap",
+        color: "#3B82F6"
+      },
+      {
+        name: "Double",
+        description: "Double your results with compound movements",
+        icon: "target",
+        color: "#10B981"
+      },
+      {
+        name: "Classic",
+        description: "Time-tested classic workouts for balanced fitness",
+        icon: "heart",
+        color: "#8B5CF6"
+      }
+    ];
+
+    for (const category of categories) {
+      await this.createWorkoutCategory(category);
+    }
+
+    // Get created categories
+    const createdCategories = await this.getAllWorkoutCategories();
+    
+    // Create 90 days of workouts (30 minutes each)
+    for (let day = 1; day <= 90; day++) {
+      const week = Math.ceil(day / 7);
+      const categoryIndex = (day - 1) % 4; // Rotate through categories
+      const category = createdCategories[categoryIndex];
+      
+      const workout = {
+        title: `Day ${day}: ${category.name} Challenge`,
+        description: `30-minute ${category.name.toLowerCase()} workout for day ${day} of your fitness journey`,
+        videoUrl: `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`, // Sample video URL
+        thumbnailUrl: `https://picsum.photos/800/450?random=${day}`, // Random thumbnail
+        duration: 1800, // 30 minutes
+        difficulty: day <= 30 ? "beginner" : day <= 60 ? "intermediate" : "advanced",
+        calories: 200 + Math.floor(day / 10) * 20, // Increasing calories as challenge progresses
+        equipment: day % 3 === 0 ? "Dumbbells" : day % 2 === 0 ? "Bodyweight" : "Resistance Bands",
+        instructor: ["Sarah Johnson", "Mike Chen", "Lisa Rodriguez", "David Kim"][categoryIndex],
+        categoryId: category.id,
+        rating: "4.5",
+        dayNumber: day,
+        weekNumber: week
+      };
+      
+      await this.createWorkout(workout);
+    }
   }
 }
 
