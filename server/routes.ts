@@ -21,7 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Workout Categories
-  app.get('/api/categories', isAuthenticated, async (req, res) => {
+  app.get('/api/categories', async (req, res) => {
     try {
       const categories = await storage.getAllWorkoutCategories();
       res.json(categories);
