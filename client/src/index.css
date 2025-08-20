@@ -1,0 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(220, 65%, 4%); /* #0F172A */
+  --foreground: hsl(210, 20%, 95%);
+  --card: hsl(215, 25%, 15%); /* #1E293B */
+  --card-foreground: hsl(210, 20%, 95%);
+  --popover: hsl(215, 25%, 15%);
+  --popover-foreground: hsl(210, 20%, 95%);
+  --primary: hsl(14, 100%, 60%); /* #FF6B35 */
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(215, 25%, 15%);
+  --secondary-foreground: hsl(210, 20%, 95%);
+  --muted: hsl(215, 13%, 25%);
+  --muted-foreground: hsl(215, 10%, 70%);
+  --accent: hsl(217, 91%, 60%); /* #3B82F6 */
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(215, 15%, 30%);
+  --input: hsl(215, 20%, 20%);
+  --ring: hsl(14, 100%, 60%);
+  --chart-1: hsl(14, 100%, 60%);
+  --chart-2: hsl(160, 60%, 45%);
+  --chart-3: hsl(30, 80%, 55%);
+  --chart-4: hsl(280, 65%, 60%);
+  --chart-5: hsl(340, 75%, 55%);
+  --sidebar: hsl(215, 25%, 15%);
+  --sidebar-foreground: hsl(210, 20%, 95%);
+  --sidebar-primary: hsl(14, 100%, 60%);
+  --sidebar-primary-foreground: hsl(0, 0%, 100%);
+  --sidebar-accent: hsl(217, 91%, 60%);
+  --sidebar-accent-foreground: hsl(0, 0%, 100%);
+  --sidebar-border: hsl(215, 15%, 30%);
+  --sidebar-ring: hsl(14, 100%, 60%);
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 1.3rem;
+  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+  --shadow-xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0px 1px 2px 0px rgba(0, 0, 0, 0.05), 0px 1px 3px 0px rgba(0, 0, 0, 0.1);
+  --shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05), 0px 1px 3px 0px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0px 2px 4px -1px rgba(0, 0, 0, 0.1), 0px 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0px 4px 6px -1px rgba(0, 0, 0, 0.1), 0px 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0px 10px 15px -3px rgba(0, 0, 0, 0.1), 0px 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+.dark {
+  --background: hsl(220, 65%, 4%);
+  --foreground: hsl(210, 20%, 95%);
+  --card: hsl(215, 25%, 15%);
+  --card-foreground: hsl(210, 20%, 95%);
+  --popover: hsl(215, 25%, 15%);
+  --popover-foreground: hsl(210, 20%, 95%);
+  --primary: hsl(14, 100%, 60%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(215, 25%, 15%);
+  --secondary-foreground: hsl(210, 20%, 95%);
+  --muted: hsl(215, 13%, 25%);
+  --muted-foreground: hsl(215, 10%, 70%);
+  --accent: hsl(217, 91%, 60%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(215, 15%, 30%);
+  --input: hsl(215, 20%, 20%);
+  --ring: hsl(14, 100%, 60%);
+  --chart-1: hsl(14, 100%, 60%);
+  --chart-2: hsl(160, 60%, 45%);
+  --chart-3: hsl(30, 80%, 55%);
+  --chart-4: hsl(280, 65%, 60%);
+  --chart-5: hsl(340, 75%, 55%);
+  --sidebar: hsl(215, 25%, 15%);
+  --sidebar-foreground: hsl(210, 20%, 95%);
+  --sidebar-primary: hsl(14, 100%, 60%);
+  --sidebar-primary-foreground: hsl(0, 0%, 100%);
+  --sidebar-accent: hsl(217, 91%, 60%);
+  --sidebar-accent-foreground: hsl(0, 0%, 100%);
+  --sidebar-border: hsl(215, 15%, 30%);
+  --sidebar-ring: hsl(14, 100%, 60%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom utility classes for the workout app */
+.gradient-bg {
+  background: linear-gradient(135deg, #FF6B35 0%, #F59E0B 100%);
+}
+
+.glass-effect {
+  backdrop-filter: blur(10px);
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.video-thumbnail {
+  aspect-ratio: 16/9;
+  position: relative;
+  overflow: hidden;
+}
+
+.category-card {
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+.workout-progress {
+  background: linear-gradient(90deg, #FF6B35 0%, #3B82F6 100%);
+}
+
+.floating-nav {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+/* Enhanced button and interactive element styling */
+.btn-primary {
+  background: linear-gradient(135deg, #FF6B35 0%, #F59E0B 100%);
+  box-shadow: 0 4px 15px 0 rgba(255, 107, 53, 0.25);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 20px 0 rgba(255, 107, 53, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(215, 25%, 15%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(215, 15%, 40%);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(215, 15%, 50%);
+}
+
+/* Video player enhancements */
+video {
+  outline: none;
+}
+
+video::-webkit-media-controls {
+  display: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+/* Progress bar styling */
+.progress-bar {
+  background: linear-gradient(90deg, #FF6B35 0%, #3B82F6 100%);
+}
