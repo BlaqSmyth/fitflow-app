@@ -12,6 +12,7 @@ import WorkoutPlayer from "@/pages/workout-player";
 import WorkoutSheet from "@/pages/workout-sheet";
 import Progress from "@/pages/progress";
 import Profile from "@/pages/profile";
+import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -38,6 +39,7 @@ function Router() {
             <Route path="/workout-sheet" component={WorkoutSheet} />
             <Route path="/progress" component={Progress} />
             <Route path="/profile" component={Profile} />
+            <Route path="/admin" component={Admin} />
           </>
         )}
         <Route component={NotFound} />

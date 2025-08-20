@@ -273,6 +273,52 @@ export class DatabaseStorage implements IStorage {
     return !!favorite;
   }
 
+  // Helper function to extract Vimeo ID from URL
+  private extractVimeoId(url: string): string {
+    const patterns = [
+      /vimeo\.com\/(\d+)/,
+      /player\.vimeo\.com\/video\/(\d+)/,
+      /^(\d+)$/ // Direct ID
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    
+    return url; // Return original if no pattern matches
+  }
+
+  // Add a Vimeo workout
+  async addVimeoWorkout(workoutData: {
+    title: string;
+    description?: string;
+    vimeoUrl: string; // Full Vimeo URL or just the ID
+    categoryId: string;
+    dayNumber?: number;
+    weekNumber?: number;
+    difficulty?: string;
+    instructor?: string;
+    equipment?: string;
+  }): Promise<Workout> {
+    const vimeoId = this.extractVimeoId(workoutData.vimeoUrl);
+    
+    const workout = {
+      ...workoutData,
+      videoUrl: workoutData.vimeoUrl,
+      vimeoId: vimeoId,
+      thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`, // Vimeo thumbnail service
+      duration: 1800, // 30 minutes default
+      calories: 200,
+      rating: "4.5",
+      difficulty: workoutData.difficulty || "intermediate",
+      instructor: workoutData.instructor || "Instructor",
+      equipment: workoutData.equipment || "Bodyweight"
+    };
+    
+    return await this.createWorkout(workout);
+  }
+
   // Seed initial data for 90-day challenge
   async seedInitialData(): Promise<void> {
     // Create workout categories
@@ -310,20 +356,31 @@ export class DatabaseStorage implements IStorage {
     // Get created categories
     const createdCategories = await this.getAllWorkoutCategories();
     
+    // Create a few sample workouts with placeholder Vimeo IDs
+    // You can replace these with your actual Vimeo video IDs
+    const sampleVimeoIds = [
+      "916076102", // Replace with your actual Vimeo video IDs
+      "916076102", 
+      "916076102",
+      "916076102"
+    ];
+    
     // Create 90 days of workouts (30 minutes each)
     for (let day = 1; day <= 90; day++) {
       const week = Math.ceil(day / 7);
       const categoryIndex = (day - 1) % 4; // Rotate through categories
       const category = createdCategories[categoryIndex];
+      const vimeoId = sampleVimeoIds[categoryIndex];
       
       const workout = {
         title: `Day ${day}: ${category.name} Challenge`,
         description: `30-minute ${category.name.toLowerCase()} workout for day ${day} of your fitness journey`,
-        videoUrl: `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`, // Sample video URL
-        thumbnailUrl: `https://picsum.photos/800/450?random=${day}`, // Random thumbnail
+        videoUrl: `https://vimeo.com/${vimeoId}`,
+        vimeoId: vimeoId,
+        thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`,
         duration: 1800, // 30 minutes
         difficulty: day <= 30 ? "beginner" : day <= 60 ? "intermediate" : "advanced",
-        calories: 200 + Math.floor(day / 10) * 20, // Increasing calories as challenge progresses
+        calories: 200 + Math.floor(day / 10) * 20,
         equipment: day % 3 === 0 ? "Dumbbells" : day % 2 === 0 ? "Bodyweight" : "Resistance Bands",
         instructor: ["Sarah Johnson", "Mike Chen", "Lisa Rodriguez", "David Kim"][categoryIndex],
         categoryId: category.id,

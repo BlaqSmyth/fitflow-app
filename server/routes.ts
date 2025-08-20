@@ -235,6 +235,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add Vimeo workout endpoint
+  app.post('/api/workouts/vimeo', isAuthenticated, async (req, res) => {
+    try {
+      const workoutData = req.body;
+      const workout = await storage.addVimeoWorkout(workoutData);
+      res.json(workout);
+    } catch (error) {
+      console.error("Error adding Vimeo workout:", error);
+      res.status(500).json({ message: "Failed to add Vimeo workout" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -50,7 +50,8 @@ export const workouts = pgTable("workouts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
   description: text("description"),
-  videoUrl: varchar("video_url").notNull(),
+  videoUrl: varchar("video_url").notNull(), // Full Vimeo URL or video ID
+  vimeoId: varchar("vimeo_id"), // Extracted Vimeo video ID for embedding
   thumbnailUrl: varchar("thumbnail_url"),
   duration: integer("duration").notNull().default(1800), // 30 minutes in seconds
   difficulty: varchar("difficulty").notNull(), // beginner, intermediate, advanced

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLocation } from "wouter";
-import VideoPlayer from "@/components/video-player";
+import VimeoPlayer from "@/components/vimeo-player";
 import { 
   X, 
   Heart, 
@@ -24,6 +24,23 @@ import {
   Maximize,
   Volume2
 } from "lucide-react";
+import type { Workout } from "@shared/schema";
+
+// Utility function to extract Vimeo video ID from URL
+function extractVimeoId(url: string): string {
+  const patterns = [
+    /vimeo\.com\/(\d+)/,
+    /player\.vimeo\.com\/video\/(\d+)/,
+    /^(\d+)$/ // Direct ID
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  
+  return url; // Return original if no pattern matches
+}
 
 export default function WorkoutPlayer() {
   const { toast } = useToast();
@@ -52,17 +69,19 @@ export default function WorkoutPlayer() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: workout, isLoading: workoutLoading } = useQuery({
+  const { data: workout, isLoading: workoutLoading } = useQuery<Workout>({
     queryKey: ["/api/workouts", workoutId],
     retry: false,
     enabled: !!workoutId,
   });
 
-  const { data: isFavorited } = useQuery({
+  const { data: favoriteData } = useQuery<{ isFavorited: boolean }>({
     queryKey: ["/api/favorites", workoutId, "check"],
     retry: false,
     enabled: !!workoutId,
   });
+  
+  const isFavorited = favoriteData?.isFavorited || false;
 
   const createSessionMutation = useMutation({
     mutationFn: async (workoutId: string) => {
@@ -172,14 +191,23 @@ export default function WorkoutPlayer() {
       <div className="relative h-full flex flex-col">
         {/* Video Container */}
         <div className="relative flex-1 bg-black">
-          <VideoPlayer 
-            src={workout.videoUrl}
-            poster={workout.thumbnailUrl}
-            isPlaying={isPlaying}
-            currentTime={currentTime}
-            onTimeUpdate={setCurrentTime}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
+          <VimeoPlayer
+            vimeoId={workout.vimeoId || extractVimeoId(workout.videoUrl)}
+            onProgress={(progress) => {
+              setCurrentTime((progress / 100) * workout.duration);
+            }}
+            onStart={() => {
+              if (!activeSession && workout.id) {
+                createSessionMutation.mutate(workout.id);
+              }
+            }}
+            onEnd={() => {
+              if (activeSession) {
+                completeSessionMutation.mutate(activeSession);
+              }
+            }}
+            className="w-full h-full"
+            autoplay={false}
           />
           
           {/* Video Controls Overlay */}
