@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, Video } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Plus, Video, Users } from "lucide-react";
 import { Link } from "wouter";
 interface VimeoWorkoutData {
   title: string;
@@ -20,6 +21,17 @@ interface VimeoWorkoutData {
   difficulty: string;
   instructor: string;
   equipment: string;
+}
+
+interface BulkUpdateData {
+  workoutName: string;
+  vimeoUrl: string;
+}
+
+interface WorkoutGroup {
+  title: string;
+  count: number;
+  days: number[];
 }
 
 export default function Admin() {
@@ -35,6 +47,17 @@ export default function Admin() {
     difficulty: "intermediate",
     instructor: "",
     equipment: "Bodyweight"
+  });
+
+  const [bulkUpdateData, setBulkUpdateData] = useState<BulkUpdateData>({
+    workoutName: "",
+    vimeoUrl: ""
+  });
+
+  // Fetch workout groups for bulk update
+  const { data: workoutGroups = [] } = useQuery<WorkoutGroup[]>({
+    queryKey: ["/api/workouts/groups"],
+    retry: false,
   });
 
   // Redirect to login if not authenticated
@@ -80,11 +103,38 @@ export default function Admin() {
         equipment: "Bodyweight"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/workouts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/workouts/groups"] });
     },
     onError: (error) => {
       toast({
         title: "Error",
         description: "Failed to add workout. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async (data: BulkUpdateData) => {
+      const response = await apiRequest("POST", "/api/workouts/bulk-update", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: `Updated ${data.updatedCount} ${bulkUpdateData.workoutName} workouts successfully!`,
+      });
+      setBulkUpdateData({
+        workoutName: "",
+        vimeoUrl: ""
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/workouts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/workouts/groups"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update workouts. Please try again.",
         variant: "destructive",
       });
     }
@@ -102,6 +152,21 @@ export default function Admin() {
     }
     addWorkoutMutation.mutate(workoutData);
   };
+
+  const handleBulkSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkUpdateData.workoutName || !bulkUpdateData.vimeoUrl) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a workout and provide a Vimeo URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+    bulkUpdateMutation.mutate(bulkUpdateData);
+  };
+
+  const selectedWorkoutGroup = workoutGroups.find(group => group.title === bulkUpdateData.workoutName);
 
   if (isLoading || !isAuthenticated) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
@@ -126,20 +191,33 @@ export default function Admin() {
         </Badge>
       </header>
 
-      <main className="px-6 py-6 max-w-2xl mx-auto">
-        <Card className="bg-surface border-slate-700">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
-                <Video className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Add Vimeo Workout</h2>
-                <p className="text-slate-400">Add your workout videos from Vimeo to the P90X3 challenge</p>
-              </div>
-            </div>
+      <main className="px-6 py-6 max-w-4xl mx-auto">
+        <Tabs defaultValue="single" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 bg-surface border border-slate-700">
+            <TabsTrigger value="single" className="text-slate-400 data-[state=active]:text-white">
+              <Video className="w-4 h-4 mr-2" />
+              Single Workout
+            </TabsTrigger>
+            <TabsTrigger value="bulk" className="text-slate-400 data-[state=active]:text-white">
+              <Users className="w-4 h-4 mr-2" />
+              Bulk Update
+            </TabsTrigger>
+          </TabsList>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <TabsContent value="single">
+            <Card className="bg-surface border-slate-700">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
+                    <Video className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Add Single Workout</h2>
+                    <p className="text-slate-400">Add or update individual workout videos from Vimeo</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="title" className="text-white">Workout Title *</Label>
@@ -233,25 +311,99 @@ export default function Admin() {
                 </div>
               </div>
 
-              <div className="pt-4">
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-r from-primary to-accent text-white"
-                  disabled={addWorkoutMutation.isPending}
-                >
-                  {addWorkoutMutation.isPending ? (
-                    workoutData.dayNumber ? "Updating Workout..." : "Adding Workout..."
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 mr-2" />
-                      {workoutData.dayNumber ? `Update Day ${workoutData.dayNumber} Workout` : "Add Vimeo Workout"}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                  <div className="pt-4">
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-gradient-to-r from-primary to-accent text-white"
+                      disabled={addWorkoutMutation.isPending}
+                    >
+                      {addWorkoutMutation.isPending ? (
+                        workoutData.dayNumber ? "Updating Workout..." : "Adding Workout..."
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-2" />
+                          {workoutData.dayNumber ? `Update Day ${workoutData.dayNumber} Workout` : "Add Vimeo Workout"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bulk">
+            <Card className="bg-surface border-slate-700">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
+                    <Users className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Bulk Update Workouts</h2>
+                    <p className="text-slate-400">Update all workout days with the same name at once</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleBulkSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="workoutName" className="text-white">Select Workout Type *</Label>
+                    <Select value={bulkUpdateData.workoutName} onValueChange={(value) => setBulkUpdateData({...bulkUpdateData, workoutName: value})}>
+                      <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                        <SelectValue placeholder="Choose a workout to update..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {workoutGroups.map((group) => (
+                          <SelectItem key={group.title} value={group.title}>
+                            {group.title} ({group.count} days: {group.days.join(', ')})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedWorkoutGroup && (
+                      <div className="mt-2 p-3 bg-slate-800 rounded-lg border border-slate-600">
+                        <p className="text-sm text-slate-300">
+                          <strong>Selected:</strong> {selectedWorkoutGroup.title}
+                        </p>
+                        <p className="text-sm text-slate-400">
+                          <strong>Days to update:</strong> {selectedWorkoutGroup.days.join(', ')} ({selectedWorkoutGroup.count} total)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bulkVimeoUrl" className="text-white">Vimeo URL or ID *</Label>
+                    <Input
+                      id="bulkVimeoUrl"
+                      value={bulkUpdateData.vimeoUrl}
+                      onChange={(e) => setBulkUpdateData({...bulkUpdateData, vimeoUrl: e.target.value})}
+                      placeholder="https://vimeo.com/123456789 or 123456789"
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+
+                  <div className="pt-4">
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-gradient-to-r from-primary to-accent text-white"
+                      disabled={bulkUpdateMutation.isPending || !selectedWorkoutGroup}
+                    >
+                      {bulkUpdateMutation.isPending ? (
+                        "Updating Workouts..."
+                      ) : (
+                        <>
+                          <Users className="w-4 h-4 mr-2" />
+                          Update {selectedWorkoutGroup?.count || 0} {bulkUpdateData.workoutName} Workouts
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
           <h3 className="text-white font-semibold mb-2">📝 Vimeo Integration Guide</h3>
@@ -262,7 +414,8 @@ export default function Admin() {
               <li>https://player.vimeo.com/video/123456789</li>
               <li>Just the video ID: 123456789</li>
             </ul>
-            <p className="mt-3"><strong>Note:</strong> Videos will automatically be embedded with 30-minute duration and proper thumbnails from Vimeo.</p>
+            <p className="mt-3"><strong>Single Workout:</strong> Add or update individual workout days.</p>
+            <p><strong>Bulk Update:</strong> Update all days with the same workout name (e.g., all 15 Dynamix days) at once.</p>
           </div>
         </div>
       </main>

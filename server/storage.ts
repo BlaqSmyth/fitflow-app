@@ -25,7 +25,7 @@ import {
   type InsertFavoriteWorkout,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, count, sql } from "drizzle-orm";
+import { eq, desc, and, count, sql, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -69,6 +69,10 @@ export interface IStorage {
   
   // Utility operations
   updateWorkoutTitles(): Promise<void>;
+  seedInitialData(): Promise<void>;
+  addVimeoWorkout(workoutData: any): Promise<Workout>;
+  getWorkoutGroups(): Promise<{ title: string; count: number; days: number[] }[]>;
+  bulkUpdateWorkoutsByName(workoutName: string, vimeoUrl: string): Promise<{ updatedCount: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -418,6 +422,92 @@ export class DatabaseStorage implements IStorage {
       
       await this.createWorkout(workout);
     }
+  }
+
+  async getWorkoutGroups(): Promise<{ title: string; count: number; days: number[] }[]> {
+    // Get all distinct workout titles and count how many days each appears
+    const results = await db
+      .select({
+        title: workouts.title,
+        dayNumber: workouts.dayNumber,
+      })
+      .from(workouts)
+      .where(sql`${workouts.title} IS NOT NULL AND ${workouts.dayNumber} IS NOT NULL`)
+      .orderBy(workouts.dayNumber);
+
+    // Group by title and collect day numbers
+    const groupMap = new Map<string, number[]>();
+    for (const result of results) {
+      if (!groupMap.has(result.title)) {
+        groupMap.set(result.title, []);
+      }
+      groupMap.get(result.title)!.push(result.dayNumber!);
+    }
+
+    // Convert to the expected format
+    return Array.from(groupMap.entries())
+      .map(([title, days]) => ({
+        title,
+        count: days.length,
+        days: days.sort((a, b) => a - b),
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  async bulkUpdateWorkoutsByName(workoutName: string, vimeoUrl: string): Promise<{ updatedCount: number }> {
+    // Extract Vimeo ID from URL or use directly if it's already an ID
+    let vimeoId = vimeoUrl;
+    const vimeoUrlMatch = vimeoUrl.match(/(?:vimeo\.com\/(?:video\/)?)(\d+)/);
+    if (vimeoUrlMatch) {
+      vimeoId = vimeoUrlMatch[1];
+    }
+
+    // Update all workouts with the specified name
+    const result = await db
+      .update(workouts)
+      .set({
+        vimeoId,
+        thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`,
+        updatedAt: new Date(),
+      })
+      .where(eq(workouts.title, workoutName))
+      .returning({ id: workouts.id });
+
+    return { updatedCount: result.length };
+  }
+
+  async addVimeoWorkout(workoutData: any): Promise<Workout> {
+    // Extract Vimeo ID from URL or use directly if it's already an ID
+    let vimeoId = workoutData.vimeoUrl;
+    const vimeoUrlMatch = workoutData.vimeoUrl.match(/(?:vimeo\.com\/(?:video\/)?)(\d+)/);
+    if (vimeoUrlMatch) {
+      vimeoId = vimeoUrlMatch[1];
+    }
+
+    const workoutToInsert = {
+      title: workoutData.title,
+      description: workoutData.description || "30-minute P90X3 workout",
+      duration: 1800, // 30 minutes in seconds
+      difficulty: workoutData.difficulty || "intermediate",
+      equipment: workoutData.equipment || "Bodyweight",
+      instructor: workoutData.instructor || "Tony Horton",
+      calories: 300,
+      thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`,
+      vimeoId,
+      dayNumber: workoutData.dayNumber,
+      weekNumber: workoutData.weekNumber,
+    };
+
+    // Check if we're updating an existing workout by day number
+    if (workoutData.dayNumber) {
+      const existingWorkout = await this.getWorkoutByDay(workoutData.dayNumber);
+      if (existingWorkout) {
+        return await this.updateWorkout(existingWorkout.id, workoutToInsert);
+      }
+    }
+
+    // Create new workout
+    return await this.createWorkout(workoutToInsert);
   }
 }
 

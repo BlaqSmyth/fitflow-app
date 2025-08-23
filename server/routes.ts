@@ -41,6 +41,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get workout groups for bulk update
+  app.get('/api/workouts/groups', isAuthenticated, async (req, res) => {
+    try {
+      const groups = await storage.getWorkoutGroups();
+      res.json(groups);
+    } catch (error) {
+      console.error("Error fetching workout groups:", error);
+      res.status(500).json({ message: "Failed to fetch workout groups" });
+    }
+  });
+
   app.get('/api/workouts/:id', isAuthenticated, async (req, res) => {
     try {
       const workout = await storage.getWorkout(req.params.id);
@@ -245,6 +256,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error adding Vimeo workout:", error);
       res.status(500).json({ message: "Failed to add Vimeo workout" });
+    }
+  });
+
+  // Bulk update workouts by name
+  app.post('/api/workouts/bulk-update', isAuthenticated, async (req, res) => {
+    try {
+      const { workoutName, vimeoUrl } = req.body;
+      if (!workoutName || !vimeoUrl) {
+        return res.status(400).json({ message: "workoutName and vimeoUrl are required" });
+      }
+      
+      const result = await storage.bulkUpdateWorkoutsByName(workoutName, vimeoUrl);
+      res.json(result);
+    } catch (error) {
+      console.error("Error bulk updating workouts:", error);
+      res.status(500).json({ message: "Failed to bulk update workouts" });
     }
   });
 
