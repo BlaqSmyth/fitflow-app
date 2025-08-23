@@ -71,7 +71,6 @@ export default function Admin() {
         title: "",
         description: "",
         vimeoUrl: "",
-        categoryId: "",
         dayNumber: "",
         difficulty: "intermediate",
         instructor: "",
@@ -90,7 +89,7 @@ export default function Admin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!workoutData.title || !workoutData.vimeoUrl || !workoutData.categoryId) {
+    if (!workoutData.title || !workoutData.vimeoUrl) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields.",
