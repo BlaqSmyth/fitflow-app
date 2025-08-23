@@ -66,6 +66,9 @@ export interface IStorage {
   removeFavoriteWorkout(userId: string, workoutId: string): Promise<void>;
   getUserFavoriteWorkouts(userId: string): Promise<Workout[]>;
   isWorkoutFavorited(userId: string, workoutId: string): Promise<boolean>;
+  
+  // Utility operations
+  updateWorkoutTitles(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -294,9 +297,6 @@ export class DatabaseStorage implements IStorage {
     instructor?: string;
     equipment?: string;
   }): Promise<Workout> {
-    console.log('=== addVimeoWorkout called ===');
-    console.log('Input dayNumber:', workoutData.dayNumber, 'type:', typeof workoutData.dayNumber);
-    
     const vimeoId = this.extractVimeoId(workoutData.vimeoUrl);
     
     const workout = {
@@ -314,20 +314,69 @@ export class DatabaseStorage implements IStorage {
     
     // Check if workout already exists for this day
     if (workoutData.dayNumber) {
-      console.log('Looking for existing workout for day:', workoutData.dayNumber);
       const existingWorkout = await this.getWorkoutByDay(workoutData.dayNumber);
-      console.log('Found existing workout:', existingWorkout ? `${existingWorkout.id} - ${existingWorkout.title}` : 'none');
       
       if (existingWorkout) {
         // Update existing workout
-        console.log('Updating existing workout...');
         return await this.updateWorkout(existingWorkout.id, workout);
       }
     }
     
     // Create new workout if none exists for this day
-    console.log('Creating new workout...');
     return await this.createWorkout(workout);
+  }
+
+  // Update workout titles to match P90X3 calendar
+  async updateWorkoutTitles(): Promise<void> {
+    // P90X3 workout schedule from calendar screenshot
+    const p90x3Schedule = [
+      // BLOCK 1 - Weeks 1-4
+      // Week 1
+      "Total Synergistics", "Agility X", "X3 Yoga", "The Challenge", "CVX", "The Warrior", "Dynamix",
+      // Week 2  
+      "Total Synergistics", "Agility X", "X3 Yoga", "The Challenge", "CVX", "The Warrior", "Dynamix",
+      // Week 3
+      "Total Synergistics", "Agility X", "X3 Yoga", "The Challenge", "CVX", "The Warrior", "Dynamix", 
+      // Week 4
+      "Isometrix", "Dynamics", "Accelerator", "Pilates X", "CVX", "X3 Yoga", "Dynamix",
+      
+      // BLOCK 2 - Weeks 5-8  
+      // Week 5
+      "Eccentric Upper", "Triometrics", "X3 Yoga", "Eccentric Lower", "Incinerator", "MMX", "Dynamix",
+      // Week 6
+      "Eccentric Upper", "Triometrics", "X3 Yoga", "Eccentric Lower", "Incinerator", "MMX", "Dynamix",
+      // Week 7
+      "Eccentric Upper", "Triometrics", "X3 Yoga", "Eccentric Lower", "Incinerator", "MMX", "Dynamix",
+      // Week 8
+      "Isometrix", "Dynamix", "Accelerator", "Pilates X", "CVX", "X3 Yoga", "Dynamix",
+      
+      // BLOCK 3 - Weeks 9-13
+      // Week 9
+      "Decelerator", "Agility X", "The Challenge", "X3 Yoga", "Triometrics", "Total Synergistics", "Dynamix",
+      // Week 10
+      "Decelerator", "MMX", "Eccentric Upper", "Triometrics", "Pilates X", "Eccentric Lower", "Dynamix",
+      // Week 11
+      "Decelerator", "Agility X", "The Challenge", "X3 Yoga", "Triometrics", "Total Synergistics", "Dynamix", 
+      // Week 12
+      "Decelerator", "MMX", "Eccentric Upper", "Triometrics", "Pilates X", "Eccentric Lower", "Dynamix",
+      // Week 13 (5 days only)
+      "Isometrix", "Accelerator", "Pilates X", "X3 Yoga", "Dynamix"
+    ];
+
+    // Update each workout with the correct P90X3 title
+    for (let day = 1; day <= 90; day++) {
+      const workoutTitle = p90x3Schedule[day - 1];
+      if (workoutTitle) {
+        const existingWorkout = await this.getWorkoutByDay(day);
+        if (existingWorkout) {
+          await this.updateWorkout(existingWorkout.id, {
+            title: workoutTitle,
+            description: `P90X3 ${workoutTitle} - 30-minute workout for day ${day}`
+          });
+          console.log(`Updated Day ${day}: ${workoutTitle}`);
+        }
+      }
+    }
   }
 
   // Seed initial data for 90-day challenge

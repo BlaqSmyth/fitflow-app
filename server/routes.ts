@@ -216,6 +216,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update workout titles endpoint (development only)
+  app.post('/api/update-titles', async (req, res) => {
+    try {
+      if (process.env.NODE_ENV !== 'development') {
+        return res.status(403).json({ message: "Title updates only allowed in development" });
+      }
+      
+      await storage.updateWorkoutTitles();
+      res.json({ message: "Workout titles updated successfully with P90X3 schedule" });
+    } catch (error) {
+      console.error("Error updating workout titles:", error);
+      res.status(500).json({ message: "Failed to update workout titles" });
+    }
+  });
+
   // Add Vimeo workout endpoint
   app.post('/api/workouts/vimeo', isAuthenticated, async (req, res) => {
     try {
@@ -225,7 +240,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dayNumber: req.body.dayNumber ? parseInt(req.body.dayNumber) : undefined,
         weekNumber: req.body.weekNumber ? parseInt(req.body.weekNumber) : undefined,
       };
-      console.log('Processed workoutData:', workoutData);
       const workout = await storage.addVimeoWorkout(workoutData);
       res.json(workout);
     } catch (error) {
