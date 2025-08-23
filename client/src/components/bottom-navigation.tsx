@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { 
   Home, 
   Play, 
+  Calendar,
   BarChart3, 
   User 
 } from "lucide-react";
@@ -13,6 +14,7 @@ export default function BottomNavigation() {
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: Play, label: "Workouts", path: "/workouts" },
+    { icon: Calendar, label: "Calendar", path: "/calendar" },
     { icon: BarChart3, label: "Progress", path: "/progress" },
     { icon: User, label: "Profile", path: "/profile" },
   ];

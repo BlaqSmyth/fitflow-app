@@ -10,6 +10,7 @@ import Home from "@/pages/home";
 import Workouts from "@/pages/workouts";
 import WorkoutPlayer from "@/pages/workout-player";
 import WorkoutSheet from "@/pages/workout-sheet";
+import Calendar from "@/pages/calendar";
 import Progress from "@/pages/progress";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
@@ -37,6 +38,7 @@ function Router() {
             <Route path="/workouts" component={Workouts} />
             <Route path="/workout-player/:id" component={WorkoutPlayer} />
             <Route path="/workout-sheet" component={WorkoutSheet} />
+            <Route path="/calendar" component={Calendar} />
             <Route path="/progress" component={Progress} />
             <Route path="/profile" component={Profile} />
             <Route path="/admin" component={Admin} />
