@@ -19,23 +19,13 @@ import {
   Heart
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import type { WorkoutCategory, Workout } from "@shared/schema";
+import type { Workout } from "@shared/schema";
 
 export default function Workouts() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const [location] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-
-  // Get category from URL params
-  useEffect(() => {
-    const urlParams = new URLSearchParams(location.split('?')[1] || '');
-    const categoryParam = urlParams.get('category');
-    if (categoryParam) {
-      setSelectedCategory(categoryParam);
-    }
-  }, [location]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -52,13 +42,8 @@ export default function Workouts() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: categories = [] } = useQuery<WorkoutCategory[]>({
-    queryKey: ["/api/categories"],
-    retry: false,
-  });
-
   const { data: workouts = [] } = useQuery<Workout[]>({
-    queryKey: selectedCategory === "all" ? ["/api/workouts"] : ["/api/workouts", selectedCategory],
+    queryKey: ["/api/workouts"],
     retry: false,
   });
 
@@ -68,14 +53,13 @@ export default function Workouts() {
     </div>;
   }
 
-  const filteredWorkouts = workouts.filter((workout: Workout) =>
-    workout.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    workout.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getCategoryName = (categoryId: string) => {
-    return categories.find((cat: WorkoutCategory) => cat.id === categoryId)?.name || '';
-  };
+  // Sort workouts by day number (1 to 90) and filter by search
+  const filteredWorkouts = workouts
+    .filter((workout: Workout) =>
+      workout.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      workout.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => (a.dayNumber || 0) - (b.dayNumber || 0));
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -111,26 +95,19 @@ export default function Workouts() {
           />
         </div>
 
-        {/* Category Tabs */}
-        <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-          <TabsList className="w-full bg-surface border-slate-700">
-            <TabsTrigger value="all" className="text-white data-[state=active]:bg-primary">
-              All
-            </TabsTrigger>
-            {categories?.map((category) => (
-              <TabsTrigger 
-                key={category.id} 
-                value={category.id}
-                className="text-white data-[state=active]:bg-primary"
-              >
-                {category.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {/* Results Header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">
+            90-Day Challenge ({filteredWorkouts.length} workouts)
+          </h2>
+          <Badge variant="outline" className="border-primary text-primary">
+            Day 1 - Day 90
+          </Badge>
+        </div>
 
-          <TabsContent value={selectedCategory} className="mt-6">
-            {/* Workout Grid */}
-            <div className="space-y-4">
+        {/* Workout Grid */}
+        <div className="mt-6">
+          <div className="space-y-4">
               {filteredWorkouts.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-slate-400 text-lg">No workouts found</p>
@@ -188,7 +165,7 @@ export default function Workouts() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <Badge variant="secondary" className="bg-primary/20 text-primary border-0">
-                              {workout.categoryId && getCategoryName(workout.categoryId)}
+                              Day {workout.dayNumber}
                             </Badge>
                             <Badge variant="outline" className="border-slate-600 text-slate-300">
                               {workout.difficulty}
@@ -211,9 +188,8 @@ export default function Workouts() {
                   </Link>
                 ))
               )}
-            </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </main>
     </div>
   );
