@@ -1,6 +1,5 @@
 import {
   users,
-  workoutCategories,
   workouts,
   exercises,
   workoutExercises,
@@ -10,8 +9,6 @@ import {
   favoriteWorkouts,
   type User,
   type UpsertUser,
-  type WorkoutCategory,
-  type InsertWorkoutCategory,
   type Workout,
   type InsertWorkout,
   type Exercise,
@@ -35,13 +32,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   
-  // Workout Category operations
-  getAllWorkoutCategories(): Promise<WorkoutCategory[]>;
-  createWorkoutCategory(category: InsertWorkoutCategory): Promise<WorkoutCategory>;
-  
   // Workout operations
   getAllWorkouts(): Promise<Workout[]>;
-  getWorkoutsByCategory(categoryId: string): Promise<Workout[]>;
   getWorkout(id: string): Promise<Workout | undefined>;
   createWorkout(workout: InsertWorkout): Promise<Workout>;
   getFeaturedWorkouts(): Promise<Workout[]>;
@@ -96,23 +88,9 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   
-  // Workout Category operations
-  async getAllWorkoutCategories(): Promise<WorkoutCategory[]> {
-    return await db.select().from(workoutCategories);
-  }
-  
-  async createWorkoutCategory(category: InsertWorkoutCategory): Promise<WorkoutCategory> {
-    const [newCategory] = await db.insert(workoutCategories).values(category).returning();
-    return newCategory;
-  }
-  
   // Workout operations
   async getAllWorkouts(): Promise<Workout[]> {
     return await db.select().from(workouts).orderBy(desc(workouts.createdAt));
-  }
-  
-  async getWorkoutsByCategory(categoryId: string): Promise<Workout[]> {
-    return await db.select().from(workouts).where(eq(workouts.categoryId, categoryId));
   }
   
   async getWorkout(id: string): Promise<Workout | undefined> {
@@ -294,7 +272,6 @@ export class DatabaseStorage implements IStorage {
     title: string;
     description?: string;
     vimeoUrl: string; // Full Vimeo URL or just the ID
-    categoryId: string;
     dayNumber?: number;
     weekNumber?: number;
     difficulty?: string;
@@ -321,43 +298,7 @@ export class DatabaseStorage implements IStorage {
 
   // Seed initial data for 90-day challenge
   async seedInitialData(): Promise<void> {
-    // Create workout categories
-    const categories = [
-      {
-        name: "Mass",
-        description: "Build muscle and gain strength with intensive workouts",
-        icon: "dumbbell",
-        color: "#FF6B35"
-      },
-      {
-        name: "Lean",
-        description: "Burn fat and get lean with high-intensity training",
-        icon: "zap",
-        color: "#3B82F6"
-      },
-      {
-        name: "Double",
-        description: "Double your results with compound movements",
-        icon: "target",
-        color: "#10B981"
-      },
-      {
-        name: "Classic",
-        description: "Time-tested classic workouts for balanced fitness",
-        icon: "heart",
-        color: "#8B5CF6"
-      }
-    ];
-
-    for (const category of categories) {
-      await this.createWorkoutCategory(category);
-    }
-
-    // Get created categories
-    const createdCategories = await this.getAllWorkoutCategories();
-    
-    // Create a few sample workouts with placeholder Vimeo IDs
-    // You can replace these with your actual Vimeo video IDs
+    // Sample Vimeo IDs for workouts
     const sampleVimeoIds = [
       "916076102", // Replace with your actual Vimeo video IDs
       "916076102", 
@@ -365,16 +306,20 @@ export class DatabaseStorage implements IStorage {
       "916076102"
     ];
     
+    // Workout types for variety
+    const workoutTypes = ["Strength", "Cardio", "Flexibility", "HIIT"];
+    const instructors = ["Sarah Johnson", "Mike Chen", "Lisa Rodriguez", "David Kim"];
+    
     // Create 90 days of workouts (30 minutes each)
     for (let day = 1; day <= 90; day++) {
       const week = Math.ceil(day / 7);
-      const categoryIndex = (day - 1) % 4; // Rotate through categories
-      const category = createdCategories[categoryIndex];
-      const vimeoId = sampleVimeoIds[categoryIndex];
+      const typeIndex = (day - 1) % 4; // Rotate through workout types
+      const workoutType = workoutTypes[typeIndex];
+      const vimeoId = sampleVimeoIds[typeIndex];
       
       const workout = {
-        title: `Day ${day}: ${category.name} Challenge`,
-        description: `30-minute ${category.name.toLowerCase()} workout for day ${day} of your fitness journey`,
+        title: `Day ${day}: ${workoutType} Challenge`,
+        description: `30-minute ${workoutType.toLowerCase()} workout for day ${day} of your fitness journey`,
         videoUrl: `https://vimeo.com/${vimeoId}`,
         vimeoId: vimeoId,
         thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`,
@@ -382,8 +327,7 @@ export class DatabaseStorage implements IStorage {
         difficulty: day <= 30 ? "beginner" : day <= 60 ? "intermediate" : "advanced",
         calories: 200 + Math.floor(day / 10) * 20,
         equipment: day % 3 === 0 ? "Dumbbells" : day % 2 === 0 ? "Bodyweight" : "Resistance Bands",
-        instructor: ["Sarah Johnson", "Mike Chen", "Lisa Rodriguez", "David Kim"][categoryIndex],
-        categoryId: category.id,
+        instructor: instructors[typeIndex],
         rating: "4.5",
         dayNumber: day,
         weekNumber: week

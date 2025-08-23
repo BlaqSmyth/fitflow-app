@@ -22,7 +22,7 @@ import {
   ClipboardList,
   BarChart3
 } from "lucide-react";
-import type { User, WorkoutCategory, Workout } from "@shared/schema";
+import type { User, Workout } from "@shared/schema";
 
 interface UserProgress {
   totalWorkouts: number;
@@ -50,10 +50,6 @@ export default function Home() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: categories = [] } = useQuery<WorkoutCategory[]>({
-    queryKey: ["/api/categories"],
-    retry: false,
-  });
 
   const { data: featuredWorkouts = [] } = useQuery<Workout[]>({
     queryKey: ["/api/workouts/featured"],
@@ -81,17 +77,10 @@ export default function Home() {
 
   const todayProgress = progress.totalWorkouts ? Math.min((progress.totalWorkouts % 10) * 10, 100) : 0;
 
-  const categoryIcons = {
-    'Mass': Dumbbell,
-    'Lean': Zap,
-    'Double': Target,
-    'Classic': Heart,
-  };
-
-  const categoryColors = {
-    'Mass': 'text-primary',
-    'Lean': 'text-accent',
-    'Double': 'text-emerald-500',
+  const difficultyColors = {
+    'beginner': 'text-emerald-500',
+    'intermediate': 'text-accent',
+    'advanced': 'text-primary',
     'Classic': 'text-purple-500',
   };
 
@@ -220,31 +209,6 @@ export default function Home() {
           )}
         </section>
 
-        {/* Workout Categories */}
-        <section>
-          <h2 className="text-xl font-bold mb-4 text-white">Workout Programs</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {categories.map((category: WorkoutCategory) => {
-              const IconComponent = categoryIcons[category.name as keyof typeof categoryIcons] || Dumbbell;
-              const colorClass = categoryColors[category.name as keyof typeof categoryColors] || 'text-primary';
-              
-              return (
-                <Link key={category.id} href={`/workouts?category=${category.id}`}>
-                  <Card className="bg-gradient-to-br from-slate-800/50 to-slate-700/50 border-slate-600 hover:border-primary/50 transition-colors cursor-pointer">
-                    <CardContent className="p-6 text-center">
-                      <div className={`w-12 h-12 bg-gradient-to-r from-primary to-accent rounded-xl flex items-center justify-center mx-auto mb-3`}>
-                        <IconComponent className="w-6 h-6 text-white" />
-                      </div>
-                      <h3 className="font-bold text-lg mb-1 text-white">{category.name}</h3>
-                      <p className="text-slate-400 text-sm mb-2">{category.description}</p>
-                      <p className={`${colorClass} text-sm font-semibold`}>View Workouts</p>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
 
         {/* Featured Workouts */}
         <section>

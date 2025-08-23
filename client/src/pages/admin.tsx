@@ -12,13 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Video } from "lucide-react";
 import { Link } from "wouter";
-import type { WorkoutCategory } from "@shared/schema";
-
 interface VimeoWorkoutData {
   title: string;
   description: string;
   vimeoUrl: string;
-  categoryId: string;
   dayNumber: string;
   difficulty: string;
   instructor: string;
@@ -34,7 +31,6 @@ export default function Admin() {
     title: "",
     description: "",
     vimeoUrl: "",
-    categoryId: "",
     dayNumber: "",
     difficulty: "intermediate",
     instructor: "",
@@ -56,10 +52,6 @@ export default function Admin() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: categories = [] } = useQuery<WorkoutCategory[]>({
-    queryKey: ["/api/categories"],
-    retry: false,
-  });
 
   const addWorkoutMutation = useMutation({
     mutationFn: async (data: VimeoWorkoutData) => {
@@ -182,36 +174,18 @@ export default function Admin() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="text-white">Category *</Label>
-                  <Select value={workoutData.categoryId} onValueChange={(value) => setWorkoutData({...workoutData, categoryId: value})}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dayNumber" className="text-white">Day Number (1-90)</Label>
-                  <Input
-                    id="dayNumber"
-                    type="number"
-                    min="1"
-                    max="90"
-                    value={workoutData.dayNumber}
-                    onChange={(e) => setWorkoutData({...workoutData, dayNumber: e.target.value})}
-                    placeholder="1"
-                    className="bg-slate-700 border-slate-600 text-white"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="dayNumber" className="text-white">Day Number (1-90)</Label>
+                <Input
+                  id="dayNumber"
+                  type="number"
+                  min="1"
+                  max="90"
+                  value={workoutData.dayNumber}
+                  onChange={(e) => setWorkoutData({...workoutData, dayNumber: e.target.value})}
+                  placeholder="1"
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

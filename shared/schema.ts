@@ -37,15 +37,6 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const workoutCategories = pgTable("workout_categories", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name").notNull().unique(),
-  description: text("description"),
-  icon: varchar("icon").notNull(),
-  color: varchar("color").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 export const workouts = pgTable("workouts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
@@ -58,7 +49,6 @@ export const workouts = pgTable("workouts", {
   calories: integer("calories").default(200),
   equipment: text("equipment"),
   instructor: varchar("instructor"),
-  categoryId: varchar("category_id").references(() => workoutCategories.id),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("4.5"),
   dayNumber: integer("day_number"), // Day 1-90 for challenge structure
   weekNumber: integer("week_number"), // Week 1-13 for organization  
@@ -132,15 +122,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   favoriteWorkouts: many(favoriteWorkouts),
 }));
 
-export const workoutCategoriesRelations = relations(workoutCategories, ({ many }) => ({
-  workouts: many(workouts),
-}));
-
-export const workoutsRelations = relations(workouts, ({ one, many }) => ({
-  category: one(workoutCategories, {
-    fields: [workouts.categoryId],
-    references: [workoutCategories.id],
-  }),
+export const workoutsRelations = relations(workouts, ({ many }) => ({
   workoutExercises: many(workoutExercises),
   userSessions: many(userWorkoutSessions),
   favorites: many(favoriteWorkouts),
@@ -204,11 +186,6 @@ export const favoriteWorkoutsRelations = relations(favoriteWorkouts, ({ one }) =
 }));
 
 // Insert schemas
-export const insertWorkoutCategorySchema = createInsertSchema(workoutCategories).omit({
-  id: true,
-  createdAt: true,
-});
-
 export const insertWorkoutSchema = createInsertSchema(workouts).omit({
   id: true,
   createdAt: true,
@@ -247,8 +224,6 @@ export const insertFavoriteWorkoutSchema = createInsertSchema(favoriteWorkouts).
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
-export type WorkoutCategory = typeof workoutCategories.$inferSelect;
-export type InsertWorkoutCategory = z.infer<typeof insertWorkoutCategorySchema>;
 export type Workout = typeof workouts.$inferSelect;
 export type InsertWorkout = z.infer<typeof insertWorkoutSchema>;
 export type Exercise = typeof exercises.$inferSelect;

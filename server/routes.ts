@@ -20,29 +20,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Workout Categories
-  app.get('/api/categories', async (req, res) => {
-    try {
-      const categories = await storage.getAllWorkoutCategories();
-      res.json(categories);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      res.status(500).json({ message: "Failed to fetch categories" });
-    }
-  });
-
   // Workouts
   app.get('/api/workouts', isAuthenticated, async (req, res) => {
     try {
-      const { category } = req.query;
-      let workouts;
-      
-      if (category) {
-        workouts = await storage.getWorkoutsByCategory(category as string);
-      } else {
-        workouts = await storage.getAllWorkouts();
-      }
-      
+      const workouts = await storage.getAllWorkouts();
       res.json(workouts);
     } catch (error) {
       console.error("Error fetching workouts:", error);
