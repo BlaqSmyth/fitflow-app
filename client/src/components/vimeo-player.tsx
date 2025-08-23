@@ -39,13 +39,15 @@ export default function VimeoPlayer({
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [controlsTimeout, setControlsTimeout] = useState<NodeJS.Timeout | null>(null);
+  const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Build the Vimeo embed URL without default controls
+  const vimeoSrc = `https://player.vimeo.com/video/${vimeoId}?api=1&player_id=vimeo-player-${vimeoId}&autoplay=${autoplay ? 1 : 0}&controls=0&title=0&byline=0&portrait=0&responsive=1`;
 
   useEffect(() => {
-    if (!iframeRef.current) return;
-
     const iframe = iframeRef.current;
-    
+    if (!iframe) return;
+
     // Listen for messages from Vimeo player
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== 'https://player.vimeo.com') return;
@@ -55,13 +57,11 @@ export default function VimeoPlayer({
       switch (data.event) {
         case 'ready':
           setIsReady(true);
-          // Register for events we care about
+          // Register for events
           iframe.contentWindow?.postMessage({ method: 'addEventListener', value: 'play' }, '*');
           iframe.contentWindow?.postMessage({ method: 'addEventListener', value: 'pause' }, '*');
           iframe.contentWindow?.postMessage({ method: 'addEventListener', value: 'ended' }, '*');
           iframe.contentWindow?.postMessage({ method: 'addEventListener', value: 'timeupdate' }, '*');
-          iframe.contentWindow?.postMessage({ method: 'addEventListener', value: 'loaded' }, '*');
-          iframe.contentWindow?.postMessage({ method: 'addEventListener', value: 'volumechange' }, '*');
           iframe.contentWindow?.postMessage({ method: 'getDuration' }, '*');
           break;
         case 'play':
@@ -83,14 +83,6 @@ export default function VimeoPlayer({
             onProgress?.(percent * 100);
           }
           break;
-        case 'loaded':
-          iframe.contentWindow?.postMessage({ method: 'getDuration' }, '*');
-          break;
-        case 'volumechange':
-          if (data.data) {
-            setVolume(data.data.volume || 1);
-          }
-          break;
       }
       
       // Handle method responses
@@ -100,38 +92,56 @@ export default function VimeoPlayer({
     };
 
     window.addEventListener('message', handleMessage);
-    
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
+    return () => window.removeEventListener('message', handleMessage);
   }, [onProgress, onEnd, onStart]);
 
-  // Build the Vimeo embed URL with custom controls disabled
-  const vimeoSrc = `https://player.vimeo.com/video/${vimeoId}?api=1&player_id=vimeo-player-${vimeoId}&autoplay=${autoplay ? 1 : 0}&autopause=0&controls=0&title=0&byline=0&portrait=0&responsive=1&background=0`;
+  // Auto-hide controls when playing
+  useEffect(() => {
+    if (isPlaying && showControls) {
+      if (hideControlsTimeout.current) {
+        clearTimeout(hideControlsTimeout.current);
+      }
+      hideControlsTimeout.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+    
+    return () => {
+      if (hideControlsTimeout.current) {
+        clearTimeout(hideControlsTimeout.current);
+      }
+    };
+  }, [isPlaying, showControls]);
 
-  // Video control functions
-  const togglePlay = () => {
+  // Control functions
+  const sendCommand = (method: string, value?: any) => {
     if (!iframeRef.current || !isReady) return;
-    const method = isPlaying ? 'pause' : 'play';
-    console.log('Sending command:', method);
-    iframeRef.current.contentWindow?.postMessage({ method }, 'https://player.vimeo.com');
+    const message = value !== undefined ? { method, value } : { method };
+    iframeRef.current.contentWindow?.postMessage(message, '*');
+  };
+
+  const togglePlay = () => {
+    sendCommand(isPlaying ? 'pause' : 'play');
   };
 
   const seekTo = (seconds: number) => {
-    if (!iframeRef.current || !isReady) return;
-    iframeRef.current.contentWindow?.postMessage({ method: 'setCurrentTime', value: seconds }, 'https://player.vimeo.com');
+    sendCommand('setCurrentTime', seconds);
   };
 
   const setVolumeLevel = (level: number) => {
-    if (!iframeRef.current || !isReady) return;
-    iframeRef.current.contentWindow?.postMessage({ method: 'setVolume', value: level }, 'https://player.vimeo.com');
+    sendCommand('setVolume', level);
     setVolume(level);
+    setIsMuted(level === 0);
   };
 
   const toggleMute = () => {
-    const newMuted = !isMuted;
-    setIsMuted(newMuted);
-    setVolumeLevel(newMuted ? 0 : volume);
+    const newVolume = isMuted ? volume : 0;
+    setVolumeLevel(newVolume);
+  };
+
+  const skipTime = (seconds: number) => {
+    const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
+    seekTo(newTime);
   };
 
   const toggleFullscreen = () => {
@@ -148,49 +158,25 @@ export default function VimeoPlayer({
     }
   };
 
-  const skipTime = (seconds: number) => {
-    const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
-    seekTo(newTime);
-  };
-
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handleMouseMove = () => {
+  const handleMouseEnter = () => {
     setShowControls(true);
-    if (controlsTimeout) {
-      clearTimeout(controlsTimeout);
-    }
-    const timeout = setTimeout(() => {
-      if (isPlaying) {
-        setShowControls(false);
-      }
-    }, 3000);
-    setControlsTimeout(timeout);
   };
 
-  // Auto-hide controls when playing
-  useEffect(() => {
+  const handleMouseMove = () => {
+    setShowControls(true);
+  };
+
+  const handleMouseLeave = () => {
     if (isPlaying) {
-      const timeout = setTimeout(() => {
-        setShowControls(false);
-      }, 4000);
-      setControlsTimeout(timeout);
-    } else {
-      setShowControls(true);
-      if (controlsTimeout) {
-        clearTimeout(controlsTimeout);
-      }
+      setShowControls(false);
     }
-    return () => {
-      if (controlsTimeout) {
-        clearTimeout(controlsTimeout);
-      }
-    };
-  }, [isPlaying]);
+  };
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -207,61 +193,52 @@ export default function VimeoPlayer({
   return (
     <div 
       ref={containerRef}
-      className={`relative bg-black overflow-hidden group ${className}`}
+      className={`relative bg-black overflow-hidden ${className}`}
+      onMouseEnter={handleMouseEnter}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => setShowControls(true)}
-      onMouseLeave={() => setShowControls(false)}
+      onMouseLeave={handleMouseLeave}
+      style={{ aspectRatio: '16/9' }}
     >
+      {/* Vimeo iframe */}
       <iframe
         ref={iframeRef}
         id={`vimeo-player-${vimeoId}`}
         src={vimeoSrc}
-        className="w-full h-full pointer-events-none"
+        className="w-full h-full"
         frameBorder="0"
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
         title="Workout Video"
-        style={{ aspectRatio: '16/9' }}
       />
       
-      {/* Custom Controls Overlay */}
-      <div className="absolute inset-0">
-        {/* Center Play/Pause Button - Always clickable area */}
-        <div 
-          className="absolute inset-0 flex items-center justify-center cursor-pointer"
-          onClick={togglePlay}
-        >
-          <div 
-            className={`transition-opacity duration-300 ${
-              showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
-            }`}
+      {/* Controls overlay */}
+      <div 
+        className={`absolute inset-0 transition-opacity duration-300 ${
+          showControls ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{ pointerEvents: showControls ? 'auto' : 'none' }}
+      >
+        {/* Center play/pause button */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-16 h-16 bg-black/50 hover:bg-black/70 rounded-full border border-white/20"
+            onClick={togglePlay}
+            data-testid="button-center-play-pause"
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-20 h-20 bg-black/60 hover:bg-black/80 rounded-full transition-all"
-              onClick={(e) => {
-                e.stopPropagation();
-                togglePlay();
-              }}
-            >
-              {isPlaying ? (
-                <Pause className="w-8 h-8 text-white" />
-              ) : (
-                <Play className="w-8 h-8 text-white ml-1" />
-              )}
-            </Button>
-          </div>
+            {isPlaying ? (
+              <Pause className="w-8 h-8 text-white" />
+            ) : (
+              <Play className="w-8 h-8 text-white ml-1" />
+            )}
+          </Button>
         </div>
 
-        {/* Bottom Controls Bar - Always visible on hover */}
-        <div 
-          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 ${
-            showControls ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <div className="p-4 space-y-3">
-            {/* Progress Bar */}
+        {/* Bottom controls bar */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent">
+          <div className="p-4 space-y-4">
+            {/* Progress bar */}
             <div className="flex items-center space-x-3">
               <span className="text-white text-sm font-mono min-w-[45px]">
                 {formatTime(currentTime)}
@@ -274,6 +251,7 @@ export default function VimeoPlayer({
                   step={1}
                   className="w-full [&_[role=slider]]:bg-white [&_[role=slider]]:border-white"
                   onValueChange={(value) => seekTo(value[0])}
+                  data-testid="slider-progress"
                 />
               </div>
               <span className="text-white text-sm font-mono min-w-[45px]">
@@ -281,69 +259,74 @@ export default function VimeoPlayer({
               </span>
             </div>
 
-            {/* Control Buttons */}
+            {/* Control buttons */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-1">
-                {/* Rewind 10s */}
+              <div className="flex items-center space-x-2">
+                {/* Skip back */}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-white hover:bg-white/20 px-2"
+                  className="text-white hover:bg-white/20"
                   onClick={() => skipTime(-10)}
+                  data-testid="button-skip-back"
                 >
                   <SkipBack className="w-4 h-4 mr-1" />
                   <span className="text-xs">10s</span>
                 </Button>
                 
-                {/* Play/Pause */}
+                {/* Play/pause */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20 mx-2"
+                  className="text-white hover:bg-white/20"
                   onClick={togglePlay}
+                  data-testid="button-play-pause"
                 >
                   {isPlaying ? (
-                    <Pause className="w-6 h-6" />
+                    <Pause className="w-5 h-5" />
                   ) : (
-                    <Play className="w-6 h-6 ml-0.5" />
+                    <Play className="w-5 h-5 ml-0.5" />
                   )}
                 </Button>
                 
-                {/* Fast Forward 10s */}
+                {/* Skip forward */}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-white hover:bg-white/20 px-2"
+                  className="text-white hover:bg-white/20"
                   onClick={() => skipTime(10)}
+                  data-testid="button-skip-forward"
                 >
                   <span className="text-xs">10s</span>
                   <SkipForward className="w-4 h-4 ml-1" />
                 </Button>
-                
-                {/* Restart/Stop */}
+
+                {/* Restart */}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-white hover:bg-white/20 px-2 ml-2"
+                  className="text-white hover:bg-white/20 ml-2"
                   onClick={() => seekTo(0)}
+                  data-testid="button-restart"
                 >
                   <span className="text-xs">Restart</span>
                 </Button>
               </div>
 
               <div className="flex items-center space-x-2">
-                {/* Volume Control */}
+                {/* Volume controls */}
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="ghost"
                     size="icon"
                     className="text-white hover:bg-white/20"
                     onClick={toggleMute}
+                    data-testid="button-mute"
                   >
                     {isMuted || volume === 0 ? (
-                      <VolumeX className="w-5 h-5" />
+                      <VolumeX className="w-4 h-4" />
                     ) : (
-                      <Volume2 className="w-5 h-5" />
+                      <Volume2 className="w-4 h-4" />
                     )}
                   </Button>
                   <div className="w-20">
@@ -353,26 +336,24 @@ export default function VimeoPlayer({
                       max={1}
                       step={0.1}
                       className="w-full [&_[role=slider]]:bg-white [&_[role=slider]]:border-white"
-                      onValueChange={(value) => {
-                        const newVolume = value[0];
-                        setIsMuted(newVolume === 0);
-                        setVolumeLevel(newVolume);
-                      }}
+                      onValueChange={(value) => setVolumeLevel(value[0])}
+                      data-testid="slider-volume"
                     />
                   </div>
                 </div>
                 
-                {/* Fullscreen Toggle */}
+                {/* Fullscreen */}
                 <Button
                   variant="ghost"
                   size="icon"
                   className="text-white hover:bg-white/20"
                   onClick={toggleFullscreen}
+                  data-testid="button-fullscreen"
                 >
                   {isFullscreen ? (
-                    <Minimize className="w-5 h-5" />
+                    <Minimize className="w-4 h-4" />
                   ) : (
-                    <Maximize className="w-5 h-5" />
+                    <Maximize className="w-4 h-4" />
                   )}
                 </Button>
               </div>
