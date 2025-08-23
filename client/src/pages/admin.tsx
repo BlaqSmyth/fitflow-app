@@ -62,10 +62,13 @@ export default function Admin() {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const isUpdate = workoutData.dayNumber;
       toast({
         title: "Success",
-        description: "Vimeo workout added successfully!",
+        description: isUpdate 
+          ? `Day ${workoutData.dayNumber} workout updated successfully!`
+          : "Vimeo workout added successfully!",
       });
       setWorkoutData({
         title: "",
@@ -237,11 +240,11 @@ export default function Admin() {
                   disabled={addWorkoutMutation.isPending}
                 >
                   {addWorkoutMutation.isPending ? (
-                    "Adding Workout..."
+                    workoutData.dayNumber ? "Updating Workout..." : "Adding Workout..."
                   ) : (
                     <>
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Vimeo Workout
+                      {workoutData.dayNumber ? `Update Day ${workoutData.dayNumber} Workout` : "Add Vimeo Workout"}
                     </>
                   )}
                 </Button>

@@ -35,7 +35,9 @@ export interface IStorage {
   // Workout operations
   getAllWorkouts(): Promise<Workout[]>;
   getWorkout(id: string): Promise<Workout | undefined>;
+  getWorkoutByDay(dayNumber: number): Promise<Workout | undefined>;
   createWorkout(workout: InsertWorkout): Promise<Workout>;
+  updateWorkout(id: string, workout: Partial<InsertWorkout>): Promise<Workout>;
   getFeaturedWorkouts(): Promise<Workout[]>;
   
   // Exercise operations
@@ -101,6 +103,20 @@ export class DatabaseStorage implements IStorage {
   async createWorkout(workout: InsertWorkout): Promise<Workout> {
     const [newWorkout] = await db.insert(workouts).values(workout).returning();
     return newWorkout;
+  }
+  
+  async getWorkoutByDay(dayNumber: number): Promise<Workout | undefined> {
+    const [workout] = await db.select().from(workouts).where(eq(workouts.dayNumber, dayNumber));
+    return workout;
+  }
+  
+  async updateWorkout(id: string, workoutData: Partial<InsertWorkout>): Promise<Workout> {
+    const [updatedWorkout] = await db
+      .update(workouts)
+      .set(workoutData)
+      .where(eq(workouts.id, id))
+      .returning();
+    return updatedWorkout;
   }
   
   async getFeaturedWorkouts(): Promise<Workout[]> {
@@ -267,7 +283,7 @@ export class DatabaseStorage implements IStorage {
     return url; // Return original if no pattern matches
   }
 
-  // Add a Vimeo workout
+  // Add or update a Vimeo workout
   async addVimeoWorkout(workoutData: {
     title: string;
     description?: string;
@@ -293,6 +309,16 @@ export class DatabaseStorage implements IStorage {
       equipment: workoutData.equipment || "Bodyweight"
     };
     
+    // Check if workout already exists for this day
+    if (workoutData.dayNumber) {
+      const existingWorkout = await this.getWorkoutByDay(workoutData.dayNumber);
+      if (existingWorkout) {
+        // Update existing workout
+        return await this.updateWorkout(existingWorkout.id, workout);
+      }
+    }
+    
+    // Create new workout if none exists for this day
     return await this.createWorkout(workout);
   }
 
