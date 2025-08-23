@@ -111,19 +111,20 @@ export default function VimeoPlayer({
 
   // Video control functions
   const togglePlay = () => {
-    if (!iframeRef.current) return;
+    if (!iframeRef.current || !isReady) return;
     const method = isPlaying ? 'pause' : 'play';
-    iframeRef.current.contentWindow?.postMessage({ method }, '*');
+    console.log('Sending command:', method);
+    iframeRef.current.contentWindow?.postMessage({ method }, 'https://player.vimeo.com');
   };
 
   const seekTo = (seconds: number) => {
-    if (!iframeRef.current) return;
-    iframeRef.current.contentWindow?.postMessage({ method: 'setCurrentTime', value: seconds }, '*');
+    if (!iframeRef.current || !isReady) return;
+    iframeRef.current.contentWindow?.postMessage({ method: 'setCurrentTime', value: seconds }, 'https://player.vimeo.com');
   };
 
   const setVolumeLevel = (level: number) => {
-    if (!iframeRef.current) return;
-    iframeRef.current.contentWindow?.postMessage({ method: 'setVolume', value: level }, '*');
+    if (!iframeRef.current || !isReady) return;
+    iframeRef.current.contentWindow?.postMessage({ method: 'setVolume', value: level }, 'https://player.vimeo.com');
     setVolume(level);
   };
 
@@ -167,7 +168,7 @@ export default function VimeoPlayer({
       if (isPlaying) {
         setShowControls(false);
       }
-    }, 2000);
+    }, 3000);
     setControlsTimeout(timeout);
   };
 
@@ -176,7 +177,7 @@ export default function VimeoPlayer({
     if (isPlaying) {
       const timeout = setTimeout(() => {
         setShowControls(false);
-      }, 3000);
+      }, 4000);
       setControlsTimeout(timeout);
     } else {
       setShowControls(true);
@@ -184,6 +185,11 @@ export default function VimeoPlayer({
         clearTimeout(controlsTimeout);
       }
     }
+    return () => {
+      if (controlsTimeout) {
+        clearTimeout(controlsTimeout);
+      }
+    };
   }, [isPlaying]);
 
   // Listen for fullscreen changes
@@ -203,6 +209,7 @@ export default function VimeoPlayer({
       ref={containerRef}
       className={`relative bg-black overflow-hidden group ${className}`}
       onMouseMove={handleMouseMove}
+      onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
     >
       <iframe
@@ -218,19 +225,25 @@ export default function VimeoPlayer({
       />
       
       {/* Custom Controls Overlay */}
-      <div 
-        className={`absolute inset-0 transition-opacity duration-300 ${
-          showControls ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        {/* Center Play/Pause Button - Only show when paused or on hover */}
-        {(!isPlaying || showControls) && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="absolute inset-0">
+        {/* Center Play/Pause Button - Always clickable area */}
+        <div 
+          className="absolute inset-0 flex items-center justify-center cursor-pointer"
+          onClick={togglePlay}
+        >
+          <div 
+            className={`transition-opacity duration-300 ${
+              showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
             <Button
               variant="ghost"
               size="icon"
-              className="w-20 h-20 bg-black/60 hover:bg-black/80 rounded-full pointer-events-auto transition-all"
-              onClick={togglePlay}
+              className="w-20 h-20 bg-black/60 hover:bg-black/80 rounded-full transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePlay();
+              }}
             >
               {isPlaying ? (
                 <Pause className="w-8 h-8 text-white" />
@@ -239,11 +252,15 @@ export default function VimeoPlayer({
               )}
             </Button>
           </div>
-        )}
+        </div>
 
-        {/* Bottom Controls Bar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-none">
-          <div className="p-4 space-y-3 pointer-events-auto">
+        {/* Bottom Controls Bar - Always visible on hover */}
+        <div 
+          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 ${
+            showControls ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <div className="p-4 space-y-3">
             {/* Progress Bar */}
             <div className="flex items-center space-x-3">
               <span className="text-white text-sm font-mono min-w-[45px]">
@@ -266,39 +283,51 @@ export default function VimeoPlayer({
 
             {/* Control Buttons */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                {/* Skip Back */}
+              <div className="flex items-center space-x-1">
+                {/* Rewind 10s */}
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20"
+                  size="sm"
+                  className="text-white hover:bg-white/20 px-2"
                   onClick={() => skipTime(-10)}
                 >
-                  <SkipBack className="w-5 h-5" />
+                  <SkipBack className="w-4 h-4 mr-1" />
+                  <span className="text-xs">10s</span>
                 </Button>
                 
                 {/* Play/Pause */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20"
+                  className="text-white hover:bg-white/20 mx-2"
                   onClick={togglePlay}
                 >
                   {isPlaying ? (
-                    <Pause className="w-5 h-5" />
+                    <Pause className="w-6 h-6" />
                   ) : (
-                    <Play className="w-5 h-5 ml-0.5" />
+                    <Play className="w-6 h-6 ml-0.5" />
                   )}
                 </Button>
                 
-                {/* Skip Forward */}
+                {/* Fast Forward 10s */}
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20"
+                  size="sm"
+                  className="text-white hover:bg-white/20 px-2"
                   onClick={() => skipTime(10)}
                 >
-                  <SkipForward className="w-5 h-5" />
+                  <span className="text-xs">10s</span>
+                  <SkipForward className="w-4 h-4 ml-1" />
+                </Button>
+                
+                {/* Restart/Stop */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20 px-2 ml-2"
+                  onClick={() => seekTo(0)}
+                >
+                  <span className="text-xs">Restart</span>
                 </Button>
               </div>
 
