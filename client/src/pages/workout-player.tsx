@@ -210,7 +210,7 @@ export default function WorkoutPlayer() {
           </Button>
         </div>
 
-        {/* Video Container - Full screen */}
+        {/* Video Container - Full screen with bottom padding for controls */}
         <div className="relative flex-1 bg-black">
           <VimeoPlayer
             vimeoId={workout.vimeoId || extractVimeoId(workout.videoUrl)}
@@ -230,13 +230,17 @@ export default function WorkoutPlayer() {
               }
             }}
             className="w-full h-full"
+            style={{ paddingBottom: '180px' }}
             autoplay={false}
           />
         </div>
         
-        {/* Workout Info Panel - Bottom overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent">
-          <div className="p-6">
+        {/* Workout Info Panel - Bottom overlay with pointer-events-none for video controls */}
+        <div 
+          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none"
+          style={{ height: '180px' }}
+        >
+          <div className="p-6 pointer-events-auto">
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
                 <h2 className="text-xl font-bold mb-1 text-white">{workout.title}</h2>
@@ -244,34 +248,34 @@ export default function WorkoutPlayer() {
               </div>
             </div>
             
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-3">
               <div className="text-center">
-                <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Clock className="h-5 w-5 text-primary" />
+                <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-1">
+                  <Clock className="h-4 w-4 text-primary" />
                 </div>
                 <p className="text-xs text-slate-400">Duration</p>
-                <p className="font-semibold text-white">{Math.floor(workout.duration / 60)} min</p>
+                <p className="font-semibold text-white text-sm">{Math.floor(workout.duration / 60)} min</p>
               </div>
               <div className="text-center">
-                <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Flame className="h-5 w-5 text-accent" />
+                <div className="w-8 h-8 bg-accent/20 rounded-lg flex items-center justify-center mx-auto mb-1">
+                  <Flame className="h-4 w-4 text-accent" />
                 </div>
                 <p className="text-xs text-slate-400">Calories</p>
-                <p className="font-semibold text-white">{workout.calories || 'N/A'}</p>
+                <p className="font-semibold text-white text-sm">{workout.calories || 'N/A'}</p>
               </div>
               <div className="text-center">
-                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Target className="h-5 w-5 text-green-500" />
+                <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-1">
+                  <Target className="h-4 w-4 text-green-500" />
                 </div>
                 <p className="text-xs text-slate-400">Level</p>
-                <p className="font-semibold text-white capitalize">{workout.difficulty}</p>
+                <p className="font-semibold text-white text-sm capitalize">{workout.difficulty}</p>
               </div>
               <div className="text-center">
-                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <span className="text-blue-500 text-sm font-bold">P90X3</span>
+                <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-1">
+                  <span className="text-blue-500 text-xs font-bold">P90X3</span>
                 </div>
                 <p className="text-xs text-slate-400">Program</p>
-                <p className="font-semibold text-white">Day {workout.dayNumber || 1}</p>
+                <p className="font-semibold text-white text-sm">Day {workout.dayNumber || 1}</p>
               </div>
             </div>
           </div>
