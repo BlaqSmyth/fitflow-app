@@ -294,6 +294,9 @@ export class DatabaseStorage implements IStorage {
     instructor?: string;
     equipment?: string;
   }): Promise<Workout> {
+    console.log('=== addVimeoWorkout called ===');
+    console.log('Input dayNumber:', workoutData.dayNumber, 'type:', typeof workoutData.dayNumber);
+    
     const vimeoId = this.extractVimeoId(workoutData.vimeoUrl);
     
     const workout = {
@@ -311,14 +314,19 @@ export class DatabaseStorage implements IStorage {
     
     // Check if workout already exists for this day
     if (workoutData.dayNumber) {
+      console.log('Looking for existing workout for day:', workoutData.dayNumber);
       const existingWorkout = await this.getWorkoutByDay(workoutData.dayNumber);
+      console.log('Found existing workout:', existingWorkout ? `${existingWorkout.id} - ${existingWorkout.title}` : 'none');
+      
       if (existingWorkout) {
         // Update existing workout
+        console.log('Updating existing workout...');
         return await this.updateWorkout(existingWorkout.id, workout);
       }
     }
     
     // Create new workout if none exists for this day
+    console.log('Creating new workout...');
     return await this.createWorkout(workout);
   }
 

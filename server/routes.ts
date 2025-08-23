@@ -219,7 +219,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add Vimeo workout endpoint
   app.post('/api/workouts/vimeo', isAuthenticated, async (req, res) => {
     try {
-      const workoutData = req.body;
+      const workoutData = {
+        ...req.body,
+        // Ensure dayNumber and weekNumber are numbers, not strings
+        dayNumber: req.body.dayNumber ? parseInt(req.body.dayNumber) : undefined,
+        weekNumber: req.body.weekNumber ? parseInt(req.body.weekNumber) : undefined,
+      };
+      console.log('Processed workoutData:', workoutData);
       const workout = await storage.addVimeoWorkout(workoutData);
       res.json(workout);
     } catch (error) {
