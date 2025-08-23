@@ -22,12 +22,15 @@ export default function VimeoPlayer({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showControls, setShowControls] = useState(true);
+  const [showCustomControls, setShowCustomControls] = useState(false);
 
-  // Simple Vimeo embed URL with minimal parameters
-  const vimeoSrc = `https://player.vimeo.com/video/${vimeoId}?api=1&controls=0&autoplay=${autoplay ? 1 : 0}&title=0&byline=0&portrait=0`;
+  // First, let's use Vimeo's default controls to test if video works
+  const vimeoSrcWithControls = `https://player.vimeo.com/video/${vimeoId}?controls=1&autoplay=${autoplay ? 1 : 0}&title=0&byline=0&portrait=0`;
+  const vimeoSrcWithoutControls = `https://player.vimeo.com/video/${vimeoId}?api=1&controls=0&autoplay=${autoplay ? 1 : 0}&title=0&byline=0&portrait=0`;
 
   useEffect(() => {
+    if (!showCustomControls) return;
+    
     const iframe = iframeRef.current;
     if (!iframe) return;
 
@@ -39,9 +42,8 @@ export default function VimeoPlayer({
       
       switch (data.event) {
         case 'ready':
-          console.log('Vimeo player ready');
+          console.log('Vimeo player ready for custom controls');
           setIsReady(true);
-          // Subscribe to events
           iframe.contentWindow?.postMessage({ method: 'addEventListener', value: 'play' }, '*');
           iframe.contentWindow?.postMessage({ method: 'addEventListener', value: 'pause' }, '*');
           iframe.contentWindow?.postMessage({ method: 'addEventListener', value: 'ended' }, '*');
@@ -65,7 +67,7 @@ export default function VimeoPlayer({
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onProgress, onEnd, onStart]);
+  }, [showCustomControls, onProgress, onEnd, onStart]);
 
   const togglePlay = () => {
     if (!iframeRef.current || !isReady) {
@@ -78,17 +80,30 @@ export default function VimeoPlayer({
     iframeRef.current.contentWindow?.postMessage({ method }, '*');
   };
 
+  const handleCustomControlsToggle = () => {
+    setShowCustomControls(!showCustomControls);
+    setIsReady(false);
+    setIsPlaying(false);
+  };
+
   return (
-    <div 
-      className={`relative bg-black overflow-hidden ${className}`}
-      style={{ aspectRatio: '16/9' }}
-      onMouseEnter={() => setShowControls(true)}
-      onMouseLeave={() => setShowControls(!isPlaying)}
-    >
+    <div className={`relative bg-black overflow-hidden ${className}`} style={{ aspectRatio: '16/9' }}>
+      {/* Toggle button to switch between default and custom controls */}
+      <div className="absolute top-4 right-4 z-10">
+        <Button
+          onClick={handleCustomControlsToggle}
+          size="sm"
+          className="bg-white/90 text-black hover:bg-white"
+        >
+          {showCustomControls ? 'Use Default Controls' : 'Use Custom Controls'}
+        </Button>
+      </div>
+
       {/* Vimeo iframe */}
       <iframe
         ref={iframeRef}
-        src={vimeoSrc}
+        key={showCustomControls ? 'custom' : 'default'} // Force re-render when switching
+        src={showCustomControls ? vimeoSrcWithoutControls : vimeoSrcWithControls}
         className="w-full h-full"
         frameBorder="0"
         allow="autoplay; fullscreen; picture-in-picture"
@@ -96,8 +111,8 @@ export default function VimeoPlayer({
         title="Workout Video"
       />
       
-      {/* Simple overlay with just play/pause */}
-      {showControls && (
+      {/* Custom controls overlay - only when enabled */}
+      {showCustomControls && (
         <div className="absolute inset-0 bg-black/20">
           {/* Large center play/pause button */}
           <div className="absolute inset-0 flex items-center justify-center">
@@ -115,7 +130,7 @@ export default function VimeoPlayer({
             </Button>
           </div>
           
-          {/* Simple bottom overlay showing status */}
+          {/* Status bar */}
           <div className="absolute bottom-4 left-4 right-4">
             <div className="bg-black/80 text-white px-4 py-2 rounded">
               <div className="flex items-center justify-between">
