@@ -167,9 +167,24 @@ export default function VimeoPlayer({
       if (isPlaying) {
         setShowControls(false);
       }
-    }, 3000);
+    }, 2000);
     setControlsTimeout(timeout);
   };
+
+  // Auto-hide controls when playing
+  useEffect(() => {
+    if (isPlaying) {
+      const timeout = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+      setControlsTimeout(timeout);
+    } else {
+      setShowControls(true);
+      if (controlsTimeout) {
+        clearTimeout(controlsTimeout);
+      }
+    }
+  }, [isPlaying]);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -186,7 +201,7 @@ export default function VimeoPlayer({
   return (
     <div 
       ref={containerRef}
-      className={`relative bg-black overflow-hidden group cursor-none ${className}`}
+      className={`relative bg-black overflow-hidden group ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setShowControls(false)}
     >
@@ -204,41 +219,43 @@ export default function VimeoPlayer({
       
       {/* Custom Controls Overlay */}
       <div 
-        className={`absolute inset-0 pointer-events-none transition-opacity duration-300 ${
-          showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
+        className={`absolute inset-0 transition-opacity duration-300 ${
+          showControls ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {/* Center Play/Pause Button */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-20 h-20 bg-black/50 hover:bg-black/70 rounded-full pointer-events-auto"
-            onClick={togglePlay}
-          >
-            {isPlaying ? (
-              <Pause className="w-8 h-8 text-white" />
-            ) : (
-              <Play className="w-8 h-8 text-white ml-1" />
-            )}
-          </Button>
-        </div>
+        {/* Center Play/Pause Button - Only show when paused or on hover */}
+        {(!isPlaying || showControls) && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-20 h-20 bg-black/60 hover:bg-black/80 rounded-full pointer-events-auto transition-all"
+              onClick={togglePlay}
+            >
+              {isPlaying ? (
+                <Pause className="w-8 h-8 text-white" />
+              ) : (
+                <Play className="w-8 h-8 text-white ml-1" />
+              )}
+            </Button>
+          </div>
+        )}
 
         {/* Bottom Controls Bar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent">
-          <div className="p-4 space-y-3">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-none">
+          <div className="p-4 space-y-3 pointer-events-auto">
             {/* Progress Bar */}
             <div className="flex items-center space-x-3">
               <span className="text-white text-sm font-mono min-w-[45px]">
                 {formatTime(currentTime)}
               </span>
-              <div className="flex-1 pointer-events-auto">
+              <div className="flex-1">
                 <Slider
                   value={[currentTime]}
                   min={0}
-                  max={duration}
+                  max={duration || 1}
                   step={1}
-                  className="w-full"
+                  className="w-full [&_[role=slider]]:bg-white [&_[role=slider]]:border-white"
                   onValueChange={(value) => seekTo(value[0])}
                 />
               </div>
@@ -254,7 +271,7 @@ export default function VimeoPlayer({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20 pointer-events-auto"
+                  className="text-white hover:bg-white/20"
                   onClick={() => skipTime(-10)}
                 >
                   <SkipBack className="w-5 h-5" />
@@ -264,7 +281,7 @@ export default function VimeoPlayer({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20 pointer-events-auto"
+                  className="text-white hover:bg-white/20"
                   onClick={togglePlay}
                 >
                   {isPlaying ? (
@@ -278,7 +295,7 @@ export default function VimeoPlayer({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20 pointer-events-auto"
+                  className="text-white hover:bg-white/20"
                   onClick={() => skipTime(10)}
                 >
                   <SkipForward className="w-5 h-5" />
@@ -291,7 +308,7 @@ export default function VimeoPlayer({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-white hover:bg-white/20 pointer-events-auto"
+                    className="text-white hover:bg-white/20"
                     onClick={toggleMute}
                   >
                     {isMuted || volume === 0 ? (
@@ -300,13 +317,13 @@ export default function VimeoPlayer({
                       <Volume2 className="w-5 h-5" />
                     )}
                   </Button>
-                  <div className="w-20 pointer-events-auto">
+                  <div className="w-20">
                     <Slider
                       value={[isMuted ? 0 : volume]}
                       min={0}
                       max={1}
                       step={0.1}
-                      className="w-full"
+                      className="w-full [&_[role=slider]]:bg-white [&_[role=slider]]:border-white"
                       onValueChange={(value) => {
                         const newVolume = value[0];
                         setIsMuted(newVolume === 0);
@@ -320,7 +337,7 @@ export default function VimeoPlayer({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20 pointer-events-auto"
+                  className="text-white hover:bg-white/20"
                   onClick={toggleFullscreen}
                 >
                   {isFullscreen ? (
