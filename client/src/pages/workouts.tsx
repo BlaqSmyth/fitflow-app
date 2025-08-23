@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link, useLocation } from "wouter";
-import VimeoThumbnail from "@/components/vimeo-thumbnail";
 import { 
   Play, 
   Star, 
@@ -119,43 +118,24 @@ export default function Workouts() {
                   <Link key={workout.id} href={`/workout-player/${workout.id}`}>
                     <Card className="bg-surface border-slate-700 overflow-hidden hover:border-primary/50 transition-colors cursor-pointer">
                       <div className="aspect-video bg-slate-700 relative">
-                        {/* Use Vimeo thumbnail component for real video previews */}
-                        {workout.vimeoId ? (
-                          <VimeoThumbnail
-                            vimeoId={workout.vimeoId}
+                        {workout.thumbnailUrl && (
+                          <img 
+                            src={workout.thumbnailUrl} 
                             alt={workout.title}
-                            className="aspect-video"
-                            showOverlay={true}
-                            workoutTitle={workout.title}
-                            duration={workout.duration}
+                            className="w-full h-full object-cover"
                           />
-                        ) : (
-                          // Fallback for workouts without Vimeo ID
-                          <>
-                            {workout.thumbnailUrl && (
-                              <img 
-                                src={workout.thumbnailUrl} 
-                                alt={workout.title}
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                              <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
-                                <Play className="w-6 h-6 text-white ml-1" />
-                              </div>
-                            </div>
-                          </>
                         )}
-                        
-                        {/* Top-right duration badge */}
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
+                            <Play className="w-6 h-6 text-white ml-1" />
+                          </div>
+                        </div>
                         <div className="absolute top-4 right-4 flex gap-2">
                           <Badge className="bg-primary text-white">
                             <Clock className="w-3 h-3 mr-1" />
                             {Math.floor(workout.duration / 60)} min
                           </Badge>
                         </div>
-                        
-                        {/* Top-left favorite button */}
                         <div className="absolute top-4 left-4">
                           <Button 
                             variant="ghost" 
