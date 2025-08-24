@@ -309,55 +309,53 @@ export default function Home() {
             </Link>
           </div>
           
-          <div className="space-y-4">
-            {featuredWorkouts.slice(0, 2).map((workout: Workout) => (
-              <Link key={workout.id} href={`/workout-player/${workout.id}`}>
-                <Card className="bg-surface border-slate-700 overflow-hidden hover:border-primary/50 transition-colors cursor-pointer">
-                  <div className="aspect-video bg-slate-700 relative">
-                    {workout.thumbnailUrl && (
-                      <img 
-                        src={workout.thumbnailUrl} 
-                        alt={workout.title}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                      <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
-                        <Play className="w-6 h-6 text-white ml-1" />
-                      </div>
+          {featuredWorkouts.length > 0 && (
+            <Link href={`/workout-player/${featuredWorkouts[0].id}`}>
+              <Card className="bg-surface border-slate-700 overflow-hidden hover:border-primary/50 transition-colors cursor-pointer">
+                <div className="aspect-video bg-slate-700 relative">
+                  {featuredWorkouts[0].thumbnailUrl && (
+                    <img 
+                      src={featuredWorkouts[0].thumbnailUrl} 
+                      alt={featuredWorkouts[0].title}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
+                      <Play className="w-6 h-6 text-white ml-1" />
                     </div>
-                    <Badge className="absolute top-4 right-4 bg-primary text-white">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {Math.floor(workout.duration / 60)} min
-                    </Badge>
                   </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-bold text-lg mb-1 text-white">{workout.title}</h3>
-                    <p className="text-slate-400 text-sm mb-2">{workout.description}</p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <Badge variant="secondary" className="bg-primary/20 text-primary border-0">
-                          {workout.difficulty}
-                        </Badge>
-                        {workout.calories && (
-                          <div className="flex items-center text-slate-400 text-sm">
-                            <Flame className="w-3 h-3 mr-1" />
-                            {workout.calories} cal
-                          </div>
-                        )}
-                      </div>
-                      {workout.rating && (
-                        <div className="flex items-center space-x-1">
-                          <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                          <span className="text-sm font-medium text-white">{workout.rating}</span>
+                  <Badge className="absolute top-4 right-4 bg-primary text-white">
+                    <Clock className="w-3 h-3 mr-1" />
+                    {Math.floor(featuredWorkouts[0].duration / 60)} min
+                  </Badge>
+                </div>
+                <CardContent className="p-4">
+                  <h3 className="font-bold text-lg mb-1 text-white">{featuredWorkouts[0].title}</h3>
+                  <p className="text-slate-400 text-sm mb-2">{featuredWorkouts[0].description}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Badge variant="secondary" className="bg-primary/20 text-primary border-0">
+                        {featuredWorkouts[0].difficulty}
+                      </Badge>
+                      {featuredWorkouts[0].calories && (
+                        <div className="flex items-center text-slate-400 text-sm">
+                          <Flame className="w-3 h-3 mr-1" />
+                          {featuredWorkouts[0].calories} cal
                         </div>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+                    {featuredWorkouts[0].rating && (
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                        <span className="text-sm font-medium text-white">{featuredWorkouts[0].rating}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
         </section>
 
         {/* Quick Actions */}
