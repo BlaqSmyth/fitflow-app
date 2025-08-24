@@ -85,18 +85,52 @@ export class DatabaseStorage implements IStorage {
       .single();
     
     if (error || !data) return undefined;
-    return data as User;
+    
+    // Convert snake_case to camelCase for TypeScript
+    return {
+      id: data.id,
+      email: data.email,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      profileImageUrl: data.profile_image_url,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    } as User;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    // Convert camelCase to snake_case for database
+    const dbUserData = {
+      id: userData.id,
+      email: userData.email,
+      first_name: userData.firstName || null,
+      last_name: userData.lastName || null,
+      profile_image_url: userData.profileImageUrl || null,
+      created_at: userData.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
     const { data, error } = await supabase
       .from('users')
-      .upsert(userData, { onConflict: 'id' })
+      .upsert(dbUserData, { 
+        onConflict: 'id',
+        ignoreDuplicates: false 
+      })
       .select()
       .single();
     
     if (error) throw error;
-    return data as User;
+    
+    // Convert snake_case back to camelCase for TypeScript
+    return {
+      id: data.id,
+      email: data.email,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      profileImageUrl: data.profile_image_url,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    } as User;
   }
   
   // Workout operations
@@ -107,7 +141,25 @@ export class DatabaseStorage implements IStorage {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data as Workout[];
+    
+    // Convert snake_case to camelCase for TypeScript
+    return data.map(workout => ({
+      id: workout.id,
+      title: workout.title,
+      description: workout.description,
+      videoUrl: workout.video_url,
+      vimeoId: workout.vimeo_id,
+      thumbnailUrl: workout.thumbnail_url,
+      duration: workout.duration,
+      difficulty: workout.difficulty,
+      calories: workout.calories,
+      equipment: workout.equipment,
+      instructor: workout.instructor,
+      rating: workout.rating,
+      dayNumber: workout.day_number,
+      weekNumber: workout.week_number,
+      createdAt: workout.created_at,
+    })) as Workout[];
   }
   
   async getWorkout(id: string): Promise<Workout | undefined> {
@@ -118,7 +170,25 @@ export class DatabaseStorage implements IStorage {
       .single();
     
     if (error || !data) return undefined;
-    return data as Workout;
+    
+    // Convert snake_case to camelCase for TypeScript
+    return {
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      videoUrl: data.video_url,
+      vimeoId: data.vimeo_id,
+      thumbnailUrl: data.thumbnail_url,
+      duration: data.duration,
+      difficulty: data.difficulty,
+      calories: data.calories,
+      equipment: data.equipment,
+      instructor: data.instructor,
+      rating: data.rating,
+      dayNumber: data.day_number,
+      weekNumber: data.week_number,
+      createdAt: data.created_at,
+    } as Workout;
   }
   
   async createWorkout(workout: InsertWorkout): Promise<Workout> {
@@ -140,7 +210,25 @@ export class DatabaseStorage implements IStorage {
       .single();
     
     if (error || !data) return undefined;
-    return data as Workout;
+    
+    // Convert snake_case to camelCase for TypeScript
+    return {
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      videoUrl: data.video_url,
+      vimeoId: data.vimeo_id,
+      thumbnailUrl: data.thumbnail_url,
+      duration: data.duration,
+      difficulty: data.difficulty,
+      calories: data.calories,
+      equipment: data.equipment,
+      instructor: data.instructor,
+      rating: data.rating,
+      dayNumber: data.day_number,
+      weekNumber: data.week_number,
+      createdAt: data.created_at,
+    } as Workout;
   }
   
   async updateWorkout(id: string, workoutData: Partial<InsertWorkout>): Promise<Workout> {
@@ -163,7 +251,25 @@ export class DatabaseStorage implements IStorage {
       .limit(10);
     
     if (error) throw error;
-    return data as Workout[];
+    
+    // Convert snake_case to camelCase for TypeScript
+    return data.map(workout => ({
+      id: workout.id,
+      title: workout.title,
+      description: workout.description,
+      videoUrl: workout.video_url,
+      vimeoId: workout.vimeo_id,
+      thumbnailUrl: workout.thumbnail_url,
+      duration: workout.duration,
+      difficulty: workout.difficulty,
+      calories: workout.calories,
+      equipment: workout.equipment,
+      instructor: workout.instructor,
+      rating: workout.rating,
+      dayNumber: workout.day_number,
+      weekNumber: workout.week_number,
+      createdAt: workout.created_at,
+    })) as Workout[];
   }
   
   // Exercise operations
