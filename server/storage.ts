@@ -136,46 +136,20 @@ export class DatabaseStorage implements IStorage {
   
   // Workout operations
   async getAllWorkouts(): Promise<Workout[]> {
-    console.log('Fetching all workouts from database...');
-    console.log('Supabase URL:', process.env.SUPABASE_URL ? 'Set' : 'Missing');
-    console.log('Service Role Key:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing');
-    
-    // Try with different query approaches
-    const { data, error, count } = await supabase
+    const { data, error } = await supabase
       .from('workouts')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
-    
-    console.log('Supabase query result:', { 
-      count, 
-      dataLength: data?.length, 
-      error: error ? { code: error.code, message: error.message } : null 
-    });
+      .select('*')
+      .order('day_number');
     
     if (error) {
-      console.error('Supabase error details:', error);
+      console.error('Error fetching workouts:', error);
       throw error;
     }
     
-    if (!data || data.length === 0) {
-      console.log('No workouts found - trying alternative query...');
-      
-      // Try a simpler query to test connection
-      const { data: testData, error: testError } = await supabase
-        .from('workouts')
-        .select('id, title')
-        .limit(5);
-        
-      console.log('Test query result:', { 
-        testDataLength: testData?.length, 
-        testError: testError ? { code: testError.code, message: testError.message } : null 
-      });
-      
-      return [];
-    }
+    if (!data) return [];
     
     // Convert snake_case to camelCase for TypeScript
-    const result = data.map(workout => ({
+    return data.map(workout => ({
       id: workout.id,
       title: workout.title,
       description: workout.description,
@@ -191,10 +165,7 @@ export class DatabaseStorage implements IStorage {
       dayNumber: workout.day_number,
       weekNumber: workout.week_number,
       createdAt: workout.created_at,
-    }));
-    
-    console.log('Successfully converted workouts:', result.length);
-    return result as Workout[];
+    })) as Workout[];
   }
   
   async getWorkout(id: string): Promise<Workout | undefined> {
@@ -285,7 +256,12 @@ export class DatabaseStorage implements IStorage {
       .order('rating', { ascending: false })
       .limit(10);
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching featured workouts:', error);
+      throw error;
+    }
+    
+    if (!data) return [];
     
     // Convert snake_case to camelCase for TypeScript
     return data.map(workout => ({
