@@ -148,93 +148,58 @@ export default function Calendar() {
               <h2 className="text-xl font-bold text-white">{block.name}</h2>
             </div>
 
-            {/* Days Header */}
-            <div className="bg-slate-800 grid grid-cols-4 md:grid-cols-8 border-b border-slate-600">
-              <div className="p-2 md:p-3 font-semibold text-white border-r border-slate-600 text-xs md:text-sm">
-                Week
-              </div>
-              {/* Mobile: Show first 3 days */}
-              <div className="md:hidden grid grid-cols-3 col-span-3">
-                {dayNamesShort.slice(0, 3).map((day, index) => (
-                  <div key={day} className="p-2 font-semibold text-white text-center border-r border-slate-600 last:border-r-0 text-xs">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              {/* Desktop: Show all 7 days */}
-              <div className="hidden md:contents">
-                {dayNamesShort.map((day) => (
-                  <div key={day} className="p-3 font-semibold text-white text-center border-r border-slate-600 last:border-r-0 text-sm">
-                    {day}
-                  </div>
-                ))}
-              </div>
+            {/* Desktop: Days Header */}
+            <div className="hidden md:grid md:grid-cols-8 bg-slate-800 border-b border-slate-600">
+              <div className="p-3 font-semibold text-white border-r border-slate-600">Week</div>
+              {dayNamesShort.map((day) => (
+                <div key={day} className="p-3 font-semibold text-white text-center border-r border-slate-600 last:border-r-0 text-sm">
+                  {day}
+                </div>
+              ))}
             </div>
 
             {/* Week Rows */}
             {block.weeks.map((weekNum) => {
               const weekWorkouts = workoutsByWeek[weekNum] || [];
               return (
-                <div key={weekNum} className="grid grid-cols-4 md:grid-cols-8 border-b border-slate-600 last:border-b-0">
-                  <div className="p-2 md:p-3 font-semibold text-white bg-slate-700 border-r border-slate-600 text-xs md:text-sm">
-                    W{weekNum}
-                  </div>
-                  
-                  {/* Mobile: Show first 3 days in a grid, then button for more */}
-                  <div className="md:hidden col-span-3">
-                    <div className="grid grid-cols-3">
-                      {Array.from({ length: 3 }, (_, dayIndex) => {
+                <div key={weekNum}>
+                  {/* Mobile: Vertical Week Layout */}
+                  <div className="md:hidden bg-slate-700 p-3 border-b border-slate-600">
+                    <h3 className="font-semibold text-white mb-3">Week {weekNum}</h3>
+                    <div className="space-y-2">
+                      {Array.from({ length: 7 }, (_, dayIndex) => {
                         const workout = weekWorkouts[dayIndex];
                         return (
-                          <div 
-                            key={dayIndex} 
-                            className="p-2 text-center border-r border-slate-600 last:border-r-0 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors min-h-[60px] flex items-center justify-center"
-                          >
-                            {workout ? (
-                              <Link href={`/workout-player/${workout.id}`}>
-                                <div className="cursor-pointer">
-                                  <span className="text-xs font-medium text-slate-900 dark:text-white leading-tight break-words">
-                                    {getWorkoutDisplayName(workout.title)}
-                                  </span>
-                                </div>
-                              </Link>
-                            ) : (
-                              <span className="text-slate-400 text-xs">Rest</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Show remaining days in a second row for mobile */}
-                    <div className="grid grid-cols-4 border-t border-slate-600">
-                      {Array.from({ length: 4 }, (_, dayIndex) => {
-                        const actualDayIndex = dayIndex + 3;
-                        const workout = workoutsByWeek[weekNum]?.[actualDayIndex];
-                        return (
-                          <div 
-                            key={actualDayIndex} 
-                            className="p-2 text-center border-r border-slate-600 last:border-r-0 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors min-h-[60px] flex items-center justify-center"
-                          >
-                            {workout ? (
-                              <Link href={`/workout-player/${workout.id}`}>
-                                <div className="cursor-pointer">
-                                  <span className="text-xs font-medium text-slate-900 dark:text-white leading-tight break-words">
-                                    {getWorkoutDisplayName(workout.title)}
-                                  </span>
-                                </div>
-                              </Link>
-                            ) : (
-                              <span className="text-slate-400 text-xs">Rest</span>
-                            )}
+                          <div key={dayIndex} className="flex items-center justify-between bg-slate-800/50 p-3 rounded-lg border border-slate-600">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-sm font-medium text-slate-300 w-12">
+                                {dayNamesShort[dayIndex]}
+                              </span>
+                              <div className="flex-1">
+                                {workout ? (
+                                  <Link href={`/workout-player/${workout.id}`}>
+                                    <div className="cursor-pointer">
+                                      <span className="text-sm font-medium text-white hover:text-primary transition-colors">
+                                        {getWorkoutDisplayName(workout.title)}
+                                      </span>
+                                    </div>
+                                  </Link>
+                                ) : (
+                                  <span className="text-slate-400 text-sm">Rest Day</span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                  
-                  {/* Desktop: Show all 7 days in single row */}
-                  <div className="hidden md:contents">
+
+                  {/* Desktop: Grid Layout */}
+                  <div className="hidden md:grid md:grid-cols-8 border-b border-slate-600 last:border-b-0">
+                    <div className="p-3 font-semibold text-white bg-slate-700 border-r border-slate-600">
+                      Week {weekNum}
+                    </div>
                     {Array.from({ length: 7 }, (_, dayIndex) => {
                       const workout = weekWorkouts[dayIndex];
                       return (
