@@ -790,12 +790,15 @@ export class DatabaseStorage implements IStorage {
   async getTodaysWorkout(userId: string): Promise<Workout | undefined> {
     const challenge = await this.getUserChallenge(userId);
     if (!challenge) {
+      console.log('No active challenge found for user:', userId);
       return undefined;
     }
 
     // Calculate current day based on start date
     const daysSinceStart = Math.floor((Date.now() - new Date(challenge.startDate).getTime()) / (24 * 60 * 60 * 1000)) + 1;
     const currentDay = Math.min(daysSinceStart, 90);
+    
+    console.log('Challenge found:', { challengeId: challenge.id, currentDay, daysSinceStart });
 
     // Get workout for current day
     const { data, error } = await supabase
@@ -804,8 +807,36 @@ export class DatabaseStorage implements IStorage {
       .eq('day_number', currentDay)
       .single();
 
-    if (error || !data) return undefined;
-    return data as Workout;
+    if (error) {
+      console.log('Error fetching today\'s workout:', error);
+      return undefined;
+    }
+    
+    if (!data) {
+      console.log('No workout found for day:', currentDay);
+      return undefined;
+    }
+
+    console.log('Found today\'s workout:', { title: data.title, dayNumber: data.day_number });
+    
+    // Convert snake_case to camelCase for TypeScript
+    return {
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      videoUrl: data.video_url,
+      vimeoId: data.vimeo_id,
+      thumbnailUrl: data.thumbnail_url,
+      duration: data.duration,
+      difficulty: data.difficulty,
+      calories: data.calories,
+      equipment: data.equipment,
+      instructor: data.instructor,
+      rating: data.rating,
+      dayNumber: data.day_number,
+      weekNumber: data.week_number,
+      createdAt: data.created_at,
+    } as Workout;
   }
 
   // Migration method to transfer workouts from Neon to Supabase
