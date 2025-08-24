@@ -244,66 +244,6 @@ export default function Home() {
           )}
         </section>
 
-        {/* Today's Workout */}
-        <section>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-white">Today's Workout</h2>
-            <Badge variant="secondary" className="bg-primary/20 text-primary">
-              Day {Math.min(progress.totalWorkouts + 1, 90)}
-            </Badge>
-          </div>
-          {featuredWorkouts.length > 0 && (
-            <Link href={`/workout-player/${featuredWorkouts[0].id}`}>
-              <Card className="bg-surface border-slate-700 overflow-hidden hover:border-primary/50 transition-colors cursor-pointer">
-                <div className="aspect-video bg-slate-700 relative">
-                  {featuredWorkouts[0].thumbnailUrl && (
-                    <img 
-                      src={featuredWorkouts[0].thumbnailUrl} 
-                      alt={featuredWorkouts[0].title}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                    <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
-                      <Play className="w-6 h-6 text-white ml-1" />
-                    </div>
-                  </div>
-                  <div className="absolute top-4 left-4">
-                    <Badge className="bg-primary text-white">30 min</Badge>
-                  </div>
-                  <div className="absolute top-4 right-4 flex space-x-2">
-                    <Badge variant="secondary" className="bg-black/50 text-white">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {Math.floor(featuredWorkouts[0].duration / 60)} min
-                    </Badge>
-                    <Badge variant="secondary" className="bg-black/50 text-white">
-                      <Flame className="w-3 h-3 mr-1" />
-                      {featuredWorkouts[0].calories} cal
-                    </Badge>
-                  </div>
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-bold text-lg mb-2 text-white">{featuredWorkouts[0].title}</h3>
-                  <p className="text-slate-400 text-sm mb-3">{featuredWorkouts[0].description}</p>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-4 text-sm text-slate-400">
-                      <span className="flex items-center">
-                        <Star className="w-4 h-4 mr-1 text-yellow-500" />
-                        {featuredWorkouts[0].rating}
-                      </span>
-                      <Badge variant="outline" className="text-primary border-primary/30">
-                        {featuredWorkouts[0].difficulty}
-                      </Badge>
-                    </div>
-                    <Button className="bg-gradient-to-r from-primary to-accent text-white">
-                      Start Workout
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          )}
-        </section>
 
         {/* Today's Workout */}
         {challenge && todaysWorkout && (
