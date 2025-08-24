@@ -20,6 +20,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Migration endpoint to transfer data from Neon to Supabase (no auth for migration)
+  app.post('/api/migrate-workouts', async (req, res) => {
+    try {
+      console.log('Starting workout migration from Neon to Supabase...');
+      await storage.migrateWorkoutsFromNeon();
+      res.json({ success: true, message: 'Workouts migrated successfully' });
+    } catch (error) {
+      console.error("Migration error:", error);
+      res.status(500).json({ message: "Failed to migrate workouts", error: error.message });
+    }
+  });
+
   // Workouts
   app.get('/api/workouts', isAuthenticated, async (req, res) => {
     try {

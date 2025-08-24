@@ -73,6 +73,7 @@ export interface IStorage {
   getWorkoutGroups(): Promise<{ title: string; count: number; days: number[] }[]>;
   bulkUpdateWorkoutsByName(workoutName: string, vimeoUrl: string): Promise<{ updatedCount: number }>;
   getCompletedWorkouts(userId: string): Promise<string[]>;
+  migrateWorkoutsFromNeon(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -829,6 +830,103 @@ export class DatabaseStorage implements IStorage {
 
     if (error || !data) return undefined;
     return data as Workout;
+  }
+
+  // Migration method to transfer workouts from Neon to Supabase
+  async migrateWorkoutsFromNeon(): Promise<void> {
+    console.log('Starting migration from Neon to Supabase...');
+    
+    // Connect to Neon database using DATABASE_URL
+    const { Pool } = await import('pg');
+    const neonPool = new Pool({ connectionString: process.env.DATABASE_URL });
+    
+    try {
+      // Get all workouts from Neon
+      const neonClient = await neonPool.connect();
+      const result = await neonClient.query('SELECT * FROM workouts ORDER BY day_number');
+      const neonWorkouts = result.rows;
+      
+      console.log(`Found ${neonWorkouts.length} workouts in Neon database`);
+      
+      // Clear existing workouts in Supabase
+      const { error: deleteError } = await supabase
+        .from('workouts')
+        .delete()
+        .neq('id', 'impossible-id'); // Delete all
+      
+      if (deleteError) {
+        console.error('Error clearing Supabase workouts:', deleteError);
+      }
+      
+      // Insert workouts into Supabase
+      const supabaseWorkouts = neonWorkouts.map(workout => ({
+        id: workout.id,
+        title: workout.title,
+        description: workout.description,
+        video_url: workout.video_url,
+        vimeo_id: workout.vimeo_id,
+        thumbnail_url: workout.thumbnail_url,
+        duration: workout.duration,
+        difficulty: workout.difficulty,
+        calories: workout.calories,
+        equipment: workout.equipment,
+        instructor: workout.instructor,
+        rating: workout.rating,
+        day_number: workout.day_number,
+        week_number: workout.week_number,
+        created_at: workout.created_at,
+      }));
+      
+      // Insert in batches to avoid size limits
+      const batchSize = 100;
+      for (let i = 0; i < supabaseWorkouts.length; i += batchSize) {
+        const batch = supabaseWorkouts.slice(i, i + batchSize);
+        const { error: insertError } = await supabase
+          .from('workouts')
+          .insert(batch);
+        
+        if (insertError) {
+          console.error(`Error inserting batch ${i / batchSize + 1}:`, insertError);
+          throw insertError;
+        }
+        
+        console.log(`Inserted batch ${i / batchSize + 1}/${Math.ceil(supabaseWorkouts.length / batchSize)}`);
+      }
+      
+      console.log(`Successfully migrated ${supabaseWorkouts.length} workouts to Supabase`);
+      
+      neonClient.release();
+    } catch (error) {
+      console.error('Migration error:', error);
+      throw error;
+    } finally {
+      await neonPool.end();
+    }
+  }
+
+  // Stub methods for interface compliance
+  async updateWorkoutTitles(): Promise<void> {
+    console.log('updateWorkoutTitles - not implemented');
+  }
+
+  async seedInitialData(): Promise<void> {
+    console.log('seedInitialData - not implemented');
+  }
+
+  async addVimeoWorkout(workoutData: any): Promise<Workout> {
+    throw new Error("addVimeoWorkout - not implemented yet");
+  }
+
+  async getWorkoutGroups(): Promise<{ title: string; count: number; days: number[] }[]> {
+    return [];
+  }
+
+  async bulkUpdateWorkoutsByName(workoutName: string, vimeoUrl: string): Promise<{ updatedCount: number }> {
+    return { updatedCount: 0 };
+  }
+
+  async getCompletedWorkouts(userId: string): Promise<string[]> {
+    return [];
   }
 }
 
