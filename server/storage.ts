@@ -739,8 +739,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserChallenge(userId: string): Promise<UserChallenge | undefined> {
-    console.log('getUserChallenge called for userId:', userId);
-    
     const { data, error } = await supabase
       .from('user_challenges')
       .select('*')
@@ -749,14 +747,7 @@ export class DatabaseStorage implements IStorage {
       .order('created_at', { ascending: false })
       .single();
     
-    console.log('getUserChallenge result:', { data, error });
-    
-    if (error || !data) {
-      console.log('No active challenge found or error occurred');
-      return undefined;
-    }
-    
-    console.log('Returning challenge:', data.id);
+    if (error || !data) return undefined;
     return data as UserChallenge;
   }
 
@@ -799,7 +790,6 @@ export class DatabaseStorage implements IStorage {
   async getTodaysWorkout(userId: string): Promise<Workout | undefined> {
     const challenge = await this.getUserChallenge(userId);
     if (!challenge) {
-      console.log('No active challenge found for user:', userId);
       return undefined;
     }
 
@@ -807,8 +797,6 @@ export class DatabaseStorage implements IStorage {
     const startDate = new Date(challenge.start_date || challenge.startDate);
     const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
     const currentDay = Math.min(daysSinceStart, 90);
-    
-    console.log('Challenge found:', { challengeId: challenge.id, startDate: challenge.start_date, currentDay, daysSinceStart });
 
     // Get workout for current day
     const { data, error } = await supabase
@@ -817,17 +805,7 @@ export class DatabaseStorage implements IStorage {
       .eq('day_number', currentDay)
       .single();
 
-    if (error) {
-      console.log('Error fetching today\'s workout:', error);
-      return undefined;
-    }
-    
-    if (!data) {
-      console.log('No workout found for day:', currentDay);
-      return undefined;
-    }
-
-    console.log('Found today\'s workout:', { title: data.title, dayNumber: data.day_number });
+    if (error || !data) return undefined;
     
     // Convert snake_case to camelCase for TypeScript
     return {
