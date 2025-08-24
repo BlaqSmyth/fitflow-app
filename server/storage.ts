@@ -804,10 +804,11 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Calculate current day based on start date
-    const daysSinceStart = Math.floor((Date.now() - new Date(challenge.startDate).getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    const startDate = new Date(challenge.start_date || challenge.startDate);
+    const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
     const currentDay = Math.min(daysSinceStart, 90);
     
-    console.log('Challenge found:', { challengeId: challenge.id, currentDay, daysSinceStart });
+    console.log('Challenge found:', { challengeId: challenge.id, startDate: challenge.start_date, currentDay, daysSinceStart });
 
     // Get workout for current day
     const { data, error } = await supabase
