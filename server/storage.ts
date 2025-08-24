@@ -836,15 +836,13 @@ export class DatabaseStorage implements IStorage {
   async migrateWorkoutsFromNeon(): Promise<void> {
     console.log('Starting migration from Neon to Supabase...');
     
-    // Connect to Neon database using DATABASE_URL
-    const { Pool } = await import('pg');
-    const neonPool = new Pool({ connectionString: process.env.DATABASE_URL });
+    // Connect to Neon database using existing postgres package
+    const postgres = await import('postgres');
+    const sql = postgres.default(process.env.DATABASE_URL!);
     
     try {
       // Get all workouts from Neon
-      const neonClient = await neonPool.connect();
-      const result = await neonClient.query('SELECT * FROM workouts ORDER BY day_number');
-      const neonWorkouts = result.rows;
+      const neonWorkouts = await sql`SELECT * FROM workouts ORDER BY day_number`;
       
       console.log(`Found ${neonWorkouts.length} workouts in Neon database`);
       
@@ -895,12 +893,11 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`Successfully migrated ${supabaseWorkouts.length} workouts to Supabase`);
       
-      neonClient.release();
     } catch (error) {
       console.error('Migration error:', error);
       throw error;
     } finally {
-      await neonPool.end();
+      await sql.end();
     }
   }
 
