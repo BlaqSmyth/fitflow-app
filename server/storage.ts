@@ -739,6 +739,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserChallenge(userId: string): Promise<UserChallenge | undefined> {
+    console.log('getUserChallenge called for userId:', userId);
+    
     const { data, error } = await supabase
       .from('user_challenges')
       .select('*')
@@ -747,7 +749,14 @@ export class DatabaseStorage implements IStorage {
       .order('created_at', { ascending: false })
       .single();
     
-    if (error || !data) return undefined;
+    console.log('getUserChallenge result:', { data, error });
+    
+    if (error || !data) {
+      console.log('No active challenge found or error occurred');
+      return undefined;
+    }
+    
+    console.log('Returning challenge:', data.id);
     return data as UserChallenge;
   }
 
