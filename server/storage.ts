@@ -136,19 +136,40 @@ export class DatabaseStorage implements IStorage {
   // Workout operations
   async getAllWorkouts(): Promise<Workout[]> {
     console.log('Fetching all workouts from database...');
-    const { data, error } = await supabase
+    console.log('Supabase URL:', process.env.SUPABASE_URL ? 'Set' : 'Missing');
+    console.log('Service Role Key:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing');
+    
+    // Try with different query approaches
+    const { data, error, count } = await supabase
       .from('workouts')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });
     
-    console.log('Raw data from Supabase:', data?.length || 0, 'workouts');
+    console.log('Supabase query result:', { 
+      count, 
+      dataLength: data?.length, 
+      error: error ? { code: error.code, message: error.message } : null 
+    });
+    
     if (error) {
-      console.error('Supabase error:', error);
+      console.error('Supabase error details:', error);
       throw error;
     }
     
     if (!data || data.length === 0) {
-      console.log('No workouts found in database');
+      console.log('No workouts found - trying alternative query...');
+      
+      // Try a simpler query to test connection
+      const { data: testData, error: testError } = await supabase
+        .from('workouts')
+        .select('id, title')
+        .limit(5);
+        
+      console.log('Test query result:', { 
+        testDataLength: testData?.length, 
+        testError: testError ? { code: testError.code, message: testError.message } : null 
+      });
+      
       return [];
     }
     
@@ -171,7 +192,7 @@ export class DatabaseStorage implements IStorage {
       createdAt: workout.created_at,
     }));
     
-    console.log('Converted workouts:', result.length);
+    console.log('Successfully converted workouts:', result.length);
     return result as Workout[];
   }
   
