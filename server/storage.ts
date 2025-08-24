@@ -794,7 +794,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Calculate current day based on start date
-    const startDate = new Date(challenge.start_date || challenge.startDate);
+    const startDate = new Date(challenge.startDate);
     const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
     const currentDay = Math.min(daysSinceStart, 90);
 
@@ -896,30 +896,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Stub methods for interface compliance
-  async updateWorkoutTitles(): Promise<void> {
-    console.log('updateWorkoutTitles - not implemented');
-  }
-
-  async seedInitialData(): Promise<void> {
-    console.log('seedInitialData - not implemented');
-  }
-
-  async addVimeoWorkout(workoutData: any): Promise<Workout> {
-    throw new Error("addVimeoWorkout - not implemented yet");
-  }
-
-  async getWorkoutGroups(): Promise<{ title: string; count: number; days: number[] }[]> {
-    return [];
-  }
-
-  async bulkUpdateWorkoutsByName(workoutName: string, vimeoUrl: string): Promise<{ updatedCount: number }> {
-    return { updatedCount: 0 };
-  }
-
-  async getCompletedWorkouts(userId: string): Promise<string[]> {
-    return [];
-  }
 }
 
 export const storage = new DatabaseStorage();
