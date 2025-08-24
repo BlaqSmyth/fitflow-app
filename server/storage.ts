@@ -135,15 +135,25 @@ export class DatabaseStorage implements IStorage {
   
   // Workout operations
   async getAllWorkouts(): Promise<Workout[]> {
+    console.log('Fetching all workouts from database...');
     const { data, error } = await supabase
       .from('workouts')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    console.log('Raw data from Supabase:', data?.length || 0, 'workouts');
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log('No workouts found in database');
+      return [];
+    }
     
     // Convert snake_case to camelCase for TypeScript
-    return data.map(workout => ({
+    const result = data.map(workout => ({
       id: workout.id,
       title: workout.title,
       description: workout.description,
@@ -159,7 +169,10 @@ export class DatabaseStorage implements IStorage {
       dayNumber: workout.day_number,
       weekNumber: workout.week_number,
       createdAt: workout.created_at,
-    })) as Workout[];
+    }));
+    
+    console.log('Converted workouts:', result.length);
+    return result as Workout[];
   }
   
   async getWorkout(id: string): Promise<Workout | undefined> {

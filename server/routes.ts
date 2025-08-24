@@ -23,7 +23,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workouts
   app.get('/api/workouts', isAuthenticated, async (req, res) => {
     try {
+      console.log('Workouts API called by user:', (req as any).user?.id);
       const workouts = await storage.getAllWorkouts();
+      console.log('Returning workouts:', workouts.length);
       res.json(workouts);
     } catch (error) {
       console.error("Error fetching workouts:", error);
