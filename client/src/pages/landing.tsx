@@ -20,13 +20,16 @@ export default function Landing() {
             <Dumbbell className="w-16 h-16 text-white mx-auto mb-4" />
             <h1 className="text-5xl font-bold text-white mb-2">FitFlow</h1>
             <p className="text-xl font-medium text-white/90">
-              Transform Your Body, Transform Your Life
+              Complete Your 90-Day Transformation Challenge
             </p>
           </div>
           
           <div className="space-y-4 max-w-sm mx-auto">
             <p className="text-lg text-white/80">
-              90+ Premium Workouts • 4 Training Programs • Track Your Progress
+              90-Day Challenge • 30-Minute Daily Workouts • Track Your Progress
+            </p>
+            <p className="text-sm text-white/70 mt-2">
+              Start your personal fitness journey with structured daily 30-minute workouts across 13 weeks
             </p>
           </div>
         </div>
@@ -37,7 +40,7 @@ export default function Landing() {
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="text-center">
                 <Play className="w-8 h-8 text-primary mx-auto mb-2" />
-                <p className="text-sm font-medium text-white">90+ Videos</p>
+                <p className="text-sm font-medium text-white">90 Days</p>
               </div>
               <div className="text-center">
                 <BarChart3 className="w-8 h-8 text-accent mx-auto mb-2" />
@@ -45,11 +48,11 @@ export default function Landing() {
               </div>
               <div className="text-center">
                 <Dumbbell className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                <p className="text-sm font-medium text-white">4 Programs</p>
+                <p className="text-sm font-medium text-white">30 Min Daily</p>
               </div>
               <div className="text-center">
                 <Users className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                <p className="text-sm font-medium text-white">Expert Trainers</p>
+                <p className="text-sm font-medium text-white">Personal Challenge</p>
               </div>
             </div>
 
