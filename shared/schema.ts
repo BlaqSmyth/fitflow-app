@@ -108,6 +108,20 @@ export const userProgress = pgTable("user_progress", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// User 90-day challenge tracking
+export const userChallenges = pgTable("user_challenges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  currentDay: integer("current_day").notNull().default(1),
+  isActive: boolean("is_active").default(true),
+  completedDays: integer("completed_days").array().default(sql`ARRAY[]::integer[]`),
+  pausedAt: timestamp("paused_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const favoriteWorkouts = pgTable("favorite_workouts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id),
@@ -120,6 +134,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   workoutSessions: many(userWorkoutSessions),
   progress: many(userProgress),
   favoriteWorkouts: many(favoriteWorkouts),
+  challenges: many(userChallenges),
 }));
 
 export const workoutsRelations = relations(workouts, ({ many }) => ({
@@ -185,6 +200,13 @@ export const favoriteWorkoutsRelations = relations(favoriteWorkouts, ({ one }) =
   }),
 }));
 
+export const userChallengesRelations = relations(userChallenges, ({ one }) => ({
+  user: one(users, {
+    fields: [userChallenges.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertWorkoutSchema = createInsertSchema(workouts).omit({
   id: true,
@@ -224,6 +246,12 @@ export const insertFavoriteWorkoutSchema = createInsertSchema(favoriteWorkouts).
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+export type UserChallenge = typeof userChallenges.$inferSelect;
+export type InsertUserChallenge = typeof userChallenges.$inferInsert;
+
+export const insertUserChallengeSchema = createInsertSchema(userChallenges);
+export type InsertUserChallengeType = z.infer<typeof insertUserChallengeSchema>;
 export type Workout = typeof workouts.$inferSelect;
 export type InsertWorkout = z.infer<typeof insertWorkoutSchema>;
 export type Exercise = typeof exercises.$inferSelect;

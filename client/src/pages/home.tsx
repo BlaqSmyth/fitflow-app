@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,7 +23,7 @@ import {
   ClipboardList,
   BarChart3
 } from "lucide-react";
-import type { User, Workout } from "@shared/schema";
+import type { User, Workout, UserChallenge } from "@shared/schema";
 
 interface UserProgress {
   totalWorkouts: number;
@@ -61,6 +62,42 @@ export default function Home() {
     retry: false,
   });
 
+  const { data: challenge } = useQuery<UserChallenge | null>({
+    queryKey: ["/api/challenge"],
+    retry: false,
+    enabled: isAuthenticated,
+  });
+
+  const { data: todaysWorkout } = useQuery<Workout | null>({
+    queryKey: ["/api/challenge/today"],
+    retry: false,
+    enabled: !!challenge && isAuthenticated,
+  });
+
+  const queryClient = useQueryClient();
+
+  const startChallengeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/challenge/start", {});
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Challenge Started!",
+        description: "Your 90-day fitness journey begins now!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/challenge"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/challenge/today"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to start challenge. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   if (isLoading || !isAuthenticated) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-white">Loading...</div>
@@ -76,6 +113,18 @@ export default function Home() {
     : user?.email || "User";
 
   const todayProgress = progress.totalWorkouts ? Math.min((progress.totalWorkouts % 10) * 10, 100) : 0;
+
+  // Calculate challenge progress
+  const challengeProgress = challenge 
+    ? {
+        currentDay: challenge.currentDay,
+        completedDays: challenge.completedDays?.length || 0,
+        daysRemaining: 90 - (challenge.completedDays?.length || 0),
+        progressPercentage: ((challenge.completedDays?.length || 0) / 90) * 100,
+        isCompleted: challenge.completedAt !== null,
+        daysSinceStart: Math.floor((Date.now() - new Date(challenge.startDate).getTime()) / (24 * 60 * 60 * 1000)) + 1
+      }
+    : null;
 
   const difficultyColors = {
     'beginner': 'text-emerald-500',
@@ -117,35 +166,82 @@ export default function Home() {
       <main className="px-6 space-y-6">
         {/* 90-Day Challenge Overview */}
         <section className="mt-6">
-          <Card className="bg-gradient-to-r from-primary/20 to-accent/20 border-primary/30">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h2 className="text-xl font-bold text-white">90-Day Challenge</h2>
-                  <p className="text-sm text-slate-300">30 minutes daily • Transform your fitness</p>
+          {!challenge ? (
+            // Challenge Start Card
+            <Card className="bg-gradient-to-r from-primary/20 to-accent/20 border-primary/30">
+              <CardContent className="p-6 text-center">
+                <div className="mb-4">
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Target className="w-8 h-8 text-primary" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">Ready to Transform?</h2>
+                  <p className="text-slate-300 mb-6">Join the P90X3 90-Day Challenge • 30 minutes daily</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-primary">{progress.totalWorkouts}/90</p>
-                  <p className="text-sm text-slate-300">Days Complete</p>
+                <Button 
+                  onClick={() => startChallengeMutation.mutate()}
+                  disabled={startChallengeMutation.isPending}
+                  className="bg-gradient-to-r from-primary to-accent text-white px-8 py-3 text-lg"
+                  data-testid="button-start-challenge"
+                >
+                  {startChallengeMutation.isPending ? (
+                    "Starting Challenge..."
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 mr-2" />
+                      Start 90-Day Challenge
+                    </>
+                  )}
+                </Button>
+                <div className="grid grid-cols-3 gap-4 mt-6 text-center">
+                  <div>
+                    <p className="text-xl font-bold text-primary">90</p>
+                    <p className="text-sm text-slate-400">Days Total</p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-accent">30</p>
+                    <p className="text-sm text-slate-400">Min/Day</p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-emerald-500">13</p>
+                    <p className="text-sm text-slate-400">Weeks</p>
+                  </div>
                 </div>
-              </div>
-              <Progress value={(progress.totalWorkouts / 90) * 100} className="mb-4" />
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-primary">{progress.workoutStreak}</p>
-                  <p className="text-sm text-slate-400">Day Streak</p>
+              </CardContent>
+            </Card>
+          ) : (
+            // Active Challenge Card
+            <Card className="bg-gradient-to-r from-primary/20 to-accent/20 border-primary/30">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-white">90-Day Challenge</h2>
+                    <p className="text-sm text-slate-300">Day {challengeProgress?.currentDay} • {challengeProgress?.daysRemaining} days remaining</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-primary" data-testid="text-days-completed">
+                      {challengeProgress?.completedDays}/90
+                    </p>
+                    <p className="text-sm text-slate-300">Days Complete</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-accent">{progress.totalCalories}</p>
-                  <p className="text-sm text-slate-400">Calories Burned</p>
+                <Progress value={challengeProgress?.progressPercentage || 0} className="mb-4" />
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-primary">{challengeProgress?.currentDay}</p>
+                    <p className="text-sm text-slate-400">Current Day</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-accent">{progress.totalCalories}</p>
+                    <p className="text-sm text-slate-400">Calories Burned</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-emerald-500">{Math.ceil((challengeProgress?.daysRemaining || 0) / 7)}</p>
+                    <p className="text-sm text-slate-400">Weeks Left</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-emerald-500">{Math.ceil((90 - progress.totalWorkouts) / 7)}</p>
-                  <p className="text-sm text-slate-400">Weeks Left</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </section>
 
         {/* Today's Workout */}
@@ -209,6 +305,60 @@ export default function Home() {
           )}
         </section>
 
+        {/* Today's Workout */}
+        {challenge && todaysWorkout && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white">Today's Workout</h2>
+              <Badge className="bg-primary/20 text-primary">
+                Day {challengeProgress?.currentDay}
+              </Badge>
+            </div>
+            <Link href={`/workout-player/${todaysWorkout.id}`}>
+              <Card className="bg-surface border-slate-700 overflow-hidden hover:border-primary/50 transition-colors cursor-pointer" data-testid="card-todays-workout">
+                <div className="aspect-video bg-slate-700 relative">
+                  {todaysWorkout.thumbnailUrl && (
+                    <img 
+                      src={todaysWorkout.thumbnailUrl} 
+                      alt={todaysWorkout.title}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
+                      <Play className="w-6 h-6 text-white ml-1" />
+                    </div>
+                  </div>
+                  <div className="absolute top-4 right-4">
+                    <Badge className="bg-primary text-white">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {Math.floor(todaysWorkout.duration / 60)} min
+                    </Badge>
+                  </div>
+                </div>
+                <CardContent className="p-4">
+                  <h3 className="font-bold text-lg text-white mb-2" data-testid="text-workout-title">
+                    {todaysWorkout.title}
+                  </h3>
+                  <p className="text-slate-400 text-sm mb-3">{todaysWorkout.description}</p>
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="border-slate-600 text-slate-300">
+                      {todaysWorkout.difficulty}
+                    </Badge>
+                    <div className="flex items-center space-x-3">
+                      {todaysWorkout.calories && (
+                        <div className="flex items-center text-slate-400 text-sm">
+                          <Flame className="w-3 h-3 mr-1" />
+                          {todaysWorkout.calories}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </section>
+        )}
 
         {/* Featured Workouts */}
         <section>

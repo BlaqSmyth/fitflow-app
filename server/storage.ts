@@ -7,6 +7,7 @@ import {
   exerciseSets,
   userProgress,
   favoriteWorkouts,
+  userChallenges,
   type User,
   type UpsertUser,
   type Workout,
@@ -23,6 +24,8 @@ import {
   type InsertUserProgress,
   type FavoriteWorkout,
   type InsertFavoriteWorkout,
+  type UserChallenge,
+  type InsertUserChallenge,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, count, sql, inArray } from "drizzle-orm";
@@ -66,6 +69,12 @@ export interface IStorage {
   removeFavoriteWorkout(userId: string, workoutId: string): Promise<void>;
   getUserFavoriteWorkouts(userId: string): Promise<Workout[]>;
   isWorkoutFavorited(userId: string, workoutId: string): Promise<boolean>;
+  
+  // Challenge operations
+  startUserChallenge(userId: string): Promise<UserChallenge>;
+  getUserChallenge(userId: string): Promise<UserChallenge | undefined>;
+  updateChallengeProgress(userId: string, dayNumber: number): Promise<UserChallenge>;
+  getTodaysWorkout(userId: string): Promise<Workout | undefined>;
   
   // Utility operations
   updateWorkoutTitles(): Promise<void>;
@@ -468,7 +477,6 @@ export class DatabaseStorage implements IStorage {
       .set({
         vimeoId,
         thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`,
-        updatedAt: new Date(),
       })
       .where(eq(workouts.title, workoutName))
       .returning({ id: workouts.id });
@@ -476,38 +484,91 @@ export class DatabaseStorage implements IStorage {
     return { updatedCount: result.length };
   }
 
-  async addVimeoWorkout(workoutData: any): Promise<Workout> {
-    // Extract Vimeo ID from URL or use directly if it's already an ID
-    let vimeoId = workoutData.vimeoUrl;
-    const vimeoUrlMatch = workoutData.vimeoUrl.match(/(?:vimeo\.com\/(?:video\/)?)(\d+)/);
-    if (vimeoUrlMatch) {
-      vimeoId = vimeoUrlMatch[1];
+
+  // Challenge operations
+  async startUserChallenge(userId: string): Promise<UserChallenge> {
+    // Check if user already has an active challenge
+    const existingChallenge = await this.getUserChallenge(userId);
+    if (existingChallenge && existingChallenge.isActive) {
+      return existingChallenge;
     }
 
-    const workoutToInsert = {
-      title: workoutData.title,
-      description: workoutData.description || "30-minute P90X3 workout",
-      duration: 1800, // 30 minutes in seconds
-      difficulty: workoutData.difficulty || "intermediate",
-      equipment: workoutData.equipment || "Bodyweight",
-      instructor: workoutData.instructor || "Tony Horton",
-      calories: 300,
-      thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`,
-      vimeoId,
-      dayNumber: workoutData.dayNumber,
-      weekNumber: workoutData.weekNumber,
-    };
+    // Create new challenge
+    const [challenge] = await db
+      .insert(userChallenges)
+      .values({
+        userId,
+        startDate: new Date(),
+        currentDay: 1,
+        isActive: true,
+        completedDays: [],
+      })
+      .returning();
+    
+    return challenge;
+  }
 
-    // Check if we're updating an existing workout by day number
-    if (workoutData.dayNumber) {
-      const existingWorkout = await this.getWorkoutByDay(workoutData.dayNumber);
-      if (existingWorkout) {
-        return await this.updateWorkout(existingWorkout.id, workoutToInsert);
-      }
+  async getUserChallenge(userId: string): Promise<UserChallenge | undefined> {
+    const [challenge] = await db
+      .select()
+      .from(userChallenges)
+      .where(and(eq(userChallenges.userId, userId), eq(userChallenges.isActive, true)))
+      .orderBy(desc(userChallenges.createdAt));
+    
+    return challenge;
+  }
+
+  async updateChallengeProgress(userId: string, dayNumber: number): Promise<UserChallenge> {
+    const challenge = await this.getUserChallenge(userId);
+    if (!challenge) {
+      throw new Error("No active challenge found for user");
     }
 
-    // Create new workout
-    return await this.createWorkout(workoutToInsert);
+    // Add day to completed days if not already completed
+    const completedDays = challenge.completedDays || [];
+    const updatedCompletedDays = completedDays.includes(dayNumber) 
+      ? completedDays 
+      : [...completedDays, dayNumber].sort((a, b) => a - b);
+
+    // Calculate current day based on start date
+    const daysSinceStart = Math.floor((Date.now() - challenge.startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    const newCurrentDay = Math.min(daysSinceStart, 90);
+
+    // Check if challenge is completed
+    const isCompleted = updatedCompletedDays.length >= 90 || newCurrentDay > 90;
+
+    const [updatedChallenge] = await db
+      .update(userChallenges)
+      .set({
+        currentDay: newCurrentDay,
+        completedDays: updatedCompletedDays,
+        isActive: !isCompleted,
+        completedAt: isCompleted ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(userChallenges.id, challenge.id))
+      .returning();
+
+    return updatedChallenge;
+  }
+
+  async getTodaysWorkout(userId: string): Promise<Workout | undefined> {
+    const challenge = await this.getUserChallenge(userId);
+    if (!challenge) {
+      return undefined;
+    }
+
+    // Calculate current day based on start date
+    const daysSinceStart = Math.floor((Date.now() - challenge.startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    const currentDay = Math.min(daysSinceStart, 90);
+
+    // Get workout for current day
+    const [workout] = await db
+      .select()
+      .from(workouts)
+      .where(eq(workouts.dayNumber, currentDay));
+
+    return workout;
   }
 }
 

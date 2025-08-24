@@ -79,6 +79,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Challenge Management
+  app.post('/api/challenge/start', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const challenge = await storage.startUserChallenge(userId);
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error starting challenge:", error);
+      res.status(500).json({ message: "Failed to start challenge" });
+    }
+  });
+
+  app.get('/api/challenge', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const challenge = await storage.getUserChallenge(userId);
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error fetching challenge:", error);
+      res.status(500).json({ message: "Failed to fetch challenge" });
+    }
+  });
+
+  app.get('/api/challenge/today', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const workout = await storage.getTodaysWorkout(userId);
+      res.json(workout);
+    } catch (error) {
+      console.error("Error fetching today's workout:", error);
+      res.status(500).json({ message: "Failed to fetch today's workout" });
+    }
+  });
+
+  app.post('/api/challenge/complete/:dayNumber', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const dayNumber = parseInt(req.params.dayNumber);
+      const challenge = await storage.updateChallengeProgress(userId, dayNumber);
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error updating challenge progress:", error);
+      res.status(500).json({ message: "Failed to update challenge progress" });
+    }
+  });
+
   // Workout Sessions
   app.post('/api/sessions', isAuthenticated, async (req: any, res) => {
     try {
