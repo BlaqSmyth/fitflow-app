@@ -168,6 +168,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/sessions/completed', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const completedWorkouts = await storage.getCompletedWorkouts(userId);
+      res.json(completedWorkouts);
+    } catch (error) {
+      console.error("Error fetching completed workouts:", error);
+      res.status(500).json({ message: "Failed to fetch completed workouts" });
+    }
+  });
+
   app.get('/api/sessions', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

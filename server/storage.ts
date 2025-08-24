@@ -204,6 +204,17 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userWorkoutSessions.userId, userId))
       .orderBy(desc(userWorkoutSessions.startedAt));
   }
+
+  async getCompletedWorkouts(userId: string): Promise<string[]> {
+    const sessions = await db.select({ workoutId: userWorkoutSessions.workoutId })
+      .from(userWorkoutSessions)
+      .where(and(
+        eq(userWorkoutSessions.userId, userId),
+        sql`${userWorkoutSessions.completedAt} IS NOT NULL`
+      ));
+    
+    return sessions.map(session => session.workoutId).filter((id): id is string => id !== null);
+  }
   
   // Exercise set operations
   async createExerciseSet(set: InsertExerciseSet): Promise<ExerciseSet> {

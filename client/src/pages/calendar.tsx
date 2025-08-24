@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, Check } from "lucide-react";
 import { Link } from "wouter";
 import type { Workout } from "@shared/schema";
 
@@ -34,6 +34,11 @@ export default function Calendar() {
 
   const { data: workouts = [] } = useQuery<Workout[]>({
     queryKey: ["/api/workouts"],
+    retry: false,
+  });
+
+  const { data: completedWorkouts = [] } = useQuery<string[]>({
+    queryKey: ["/api/sessions/completed"],
     retry: false,
   });
 
@@ -188,6 +193,11 @@ export default function Calendar() {
                                   <span className="text-slate-400 text-sm">Rest Day</span>
                                 )}
                               </div>
+                              {workout && completedWorkouts.includes(workout.id) && (
+                                <div className="flex items-center">
+                                  <Check className="w-5 h-5 text-green-500" />
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -205,16 +215,21 @@ export default function Calendar() {
                       return (
                         <div 
                           key={dayIndex} 
-                          className="p-3 text-center border-r border-slate-600 last:border-r-0 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                          className="p-3 text-center border-r border-slate-600 last:border-r-0 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors relative"
                         >
                           {workout ? (
-                            <Link href={`/workout-player/${workout.id}`}>
-                              <div className="cursor-pointer">
-                                <span className="text-sm font-medium text-slate-900 dark:text-white">
-                                  {getWorkoutDisplayName(workout.title)}
-                                </span>
-                              </div>
-                            </Link>
+                            <>
+                              <Link href={`/workout-player/${workout.id}`}>
+                                <div className="cursor-pointer">
+                                  <span className="text-sm font-medium text-slate-900 dark:text-white">
+                                    {getWorkoutDisplayName(workout.title)}
+                                  </span>
+                                </div>
+                              </Link>
+                              {completedWorkouts.includes(workout.id) && (
+                                <Check className="w-4 h-4 text-green-500 absolute top-1 right-1" />
+                              )}
+                            </>
                           ) : (
                             <span className="text-slate-400 text-sm">Rest</span>
                           )}
