@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import BottomNavigation from "@/components/bottom-navigation";
 import Landing from "@/pages/landing";
+import Login from "@/pages/login";
 import Home from "@/pages/home";
 import Workouts from "@/pages/workouts";
 import WorkoutPlayer from "@/pages/workout-player";
@@ -31,7 +32,10 @@ function Router() {
     <div className="relative">
       <Switch>
         {!isAuthenticated ? (
-          <Route path="/" component={Landing} />
+          <>
+            <Route path="/" component={Landing} />
+            <Route path="/login" component={Login} />
+          </>
         ) : (
           <>
             <Route path="/" component={Home} />

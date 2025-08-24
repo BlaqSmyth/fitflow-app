@@ -1,13 +1,4 @@
 import {
-  users,
-  workouts,
-  exercises,
-  workoutExercises,
-  userWorkoutSessions,
-  exerciseSets,
-  userProgress,
-  favoriteWorkouts,
-  userChallenges,
   type User,
   type UpsertUser,
   type Workout,
@@ -27,8 +18,7 @@ import {
   type UserChallenge,
   type InsertUserChallenge,
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, desc, and, count, sql, inArray } from "drizzle-orm";
+import { supabase } from "./db";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -82,216 +72,314 @@ export interface IStorage {
   addVimeoWorkout(workoutData: any): Promise<Workout>;
   getWorkoutGroups(): Promise<{ title: string; count: number; days: number[] }[]>;
   bulkUpdateWorkoutsByName(workoutName: string, vimeoUrl: string): Promise<{ updatedCount: number }>;
+  getCompletedWorkouts(userId: string): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
   // User operations (mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as User;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+    const { data, error } = await supabase
+      .from('users')
+      .upsert(userData, { onConflict: 'id' })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as User;
   }
   
   // Workout operations
   async getAllWorkouts(): Promise<Workout[]> {
-    return await db.select().from(workouts).orderBy(desc(workouts.createdAt));
+    const { data, error } = await supabase
+      .from('workouts')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data as Workout[];
   }
   
   async getWorkout(id: string): Promise<Workout | undefined> {
-    const [workout] = await db.select().from(workouts).where(eq(workouts.id, id));
-    return workout;
+    const { data, error } = await supabase
+      .from('workouts')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as Workout;
   }
   
   async createWorkout(workout: InsertWorkout): Promise<Workout> {
-    const [newWorkout] = await db.insert(workouts).values(workout).returning();
-    return newWorkout;
+    const { data, error } = await supabase
+      .from('workouts')
+      .insert(workout)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as Workout;
   }
   
   async getWorkoutByDay(dayNumber: number): Promise<Workout | undefined> {
-    const [workout] = await db.select().from(workouts).where(eq(workouts.dayNumber, dayNumber));
-    return workout;
+    const { data, error } = await supabase
+      .from('workouts')
+      .select('*')
+      .eq('day_number', dayNumber)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as Workout;
   }
   
   async updateWorkout(id: string, workoutData: Partial<InsertWorkout>): Promise<Workout> {
-    const [updatedWorkout] = await db
-      .update(workouts)
-      .set(workoutData)
-      .where(eq(workouts.id, id))
-      .returning();
-    return updatedWorkout;
+    const { data, error } = await supabase
+      .from('workouts')
+      .update(workoutData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as Workout;
   }
   
   async getFeaturedWorkouts(): Promise<Workout[]> {
-    return await db.select().from(workouts)
-      .orderBy(desc(workouts.rating))
+    const { data, error } = await supabase
+      .from('workouts')
+      .select('*')
+      .order('rating', { ascending: false })
       .limit(10);
+    
+    if (error) throw error;
+    return data as Workout[];
   }
   
   // Exercise operations
   async getAllExercises(): Promise<Exercise[]> {
-    return await db.select().from(exercises);
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('*');
+    
+    if (error) throw error;
+    return data as Exercise[];
   }
   
   async getExercise(id: string): Promise<Exercise | undefined> {
-    const [exercise] = await db.select().from(exercises).where(eq(exercises.id, id));
-    return exercise;
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as Exercise;
   }
   
   async createExercise(exercise: InsertExercise): Promise<Exercise> {
-    const [newExercise] = await db.insert(exercises).values(exercise).returning();
-    return newExercise;
+    const { data, error } = await supabase
+      .from('exercises')
+      .insert(exercise)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as Exercise;
   }
   
   async getWorkoutExercises(workoutId: string): Promise<(WorkoutExercise & { exercise: Exercise })[]> {
-    const result = await db.select()
-      .from(workoutExercises)
-      .innerJoin(exercises, eq(workoutExercises.exerciseId, exercises.id))
-      .where(eq(workoutExercises.workoutId, workoutId))
-      .orderBy(workoutExercises.orderIndex);
+    const { data, error } = await supabase
+      .from('workout_exercises')
+      .select(`
+        *,
+        exercise:exercises(*)
+      `)
+      .eq('workout_id', workoutId)
+      .order('order_index');
     
-    return result.map(row => ({
-      ...row.workout_exercises,
-      exercise: row.exercises,
-    }));
+    if (error) throw error;
+    return data.map((row: any) => ({
+      ...row,
+      exercise: row.exercise,
+    })) as (WorkoutExercise & { exercise: Exercise })[];
   }
   
   // User workout session operations
   async createWorkoutSession(session: InsertUserWorkoutSession): Promise<UserWorkoutSession> {
-    const [newSession] = await db.insert(userWorkoutSessions).values(session).returning();
-    return newSession;
+    const { data, error } = await supabase
+      .from('user_workout_sessions')
+      .insert(session)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as UserWorkoutSession;
   }
   
   async getActiveUserSession(userId: string): Promise<UserWorkoutSession | undefined> {
-    const [session] = await db.select()
-      .from(userWorkoutSessions)
-      .where(and(
-        eq(userWorkoutSessions.userId, userId),
-        sql`${userWorkoutSessions.completedAt} IS NULL`
-      ));
-    return session;
+    const { data, error } = await supabase
+      .from('user_workout_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .is('completed_at', null)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as UserWorkoutSession;
   }
   
   async completeWorkoutSession(sessionId: string, duration: number, caloriesBurned: number): Promise<UserWorkoutSession> {
-    const [session] = await db
-      .update(userWorkoutSessions)
-      .set({
-        completedAt: new Date(),
+    const { data, error } = await supabase
+      .from('user_workout_sessions')
+      .update({
+        completed_at: new Date().toISOString(),
         duration,
-        caloriesBurned,
+        calories_burned: caloriesBurned,
       })
-      .where(eq(userWorkoutSessions.id, sessionId))
-      .returning();
-    return session;
+      .eq('id', sessionId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as UserWorkoutSession;
   }
   
   async getUserWorkoutSessions(userId: string): Promise<UserWorkoutSession[]> {
-    return await db.select()
-      .from(userWorkoutSessions)
-      .where(eq(userWorkoutSessions.userId, userId))
-      .orderBy(desc(userWorkoutSessions.startedAt));
+    const { data, error } = await supabase
+      .from('user_workout_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('started_at', { ascending: false });
+    
+    if (error) throw error;
+    return data as UserWorkoutSession[];
   }
 
   async getCompletedWorkouts(userId: string): Promise<string[]> {
-    const sessions = await db.select({ workoutId: userWorkoutSessions.workoutId })
-      .from(userWorkoutSessions)
-      .where(and(
-        eq(userWorkoutSessions.userId, userId),
-        sql`${userWorkoutSessions.completedAt} IS NOT NULL`
-      ));
+    const { data, error } = await supabase
+      .from('user_workout_sessions')
+      .select('workout_id')
+      .eq('user_id', userId)
+      .not('completed_at', 'is', null);
     
-    return sessions.map(session => session.workoutId).filter((id): id is string => id !== null);
+    if (error) throw error;
+    return data.map((session: any) => session.workout_id).filter((id: string) => id !== null);
   }
   
   // Exercise set operations
   async createExerciseSet(set: InsertExerciseSet): Promise<ExerciseSet> {
-    const [newSet] = await db.insert(exerciseSets).values(set).returning();
-    return newSet;
+    const { data, error } = await supabase
+      .from('exercise_sets')
+      .insert(set)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as ExerciseSet;
   }
   
   async updateExerciseSet(id: string, set: Partial<InsertExerciseSet>): Promise<ExerciseSet> {
-    const [updatedSet] = await db
-      .update(exerciseSets)
-      .set(set)
-      .where(eq(exerciseSets.id, id))
-      .returning();
-    return updatedSet;
+    const { data, error } = await supabase
+      .from('exercise_sets')
+      .update(set)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as ExerciseSet;
   }
   
   async getSessionExerciseSets(sessionId: string): Promise<ExerciseSet[]> {
-    return await db.select()
-      .from(exerciseSets)
-      .where(eq(exerciseSets.sessionId, sessionId))
-      .orderBy(exerciseSets.setNumber);
+    const { data, error } = await supabase
+      .from('exercise_sets')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('set_number');
+    
+    if (error) throw error;
+    return data as ExerciseSet[];
   }
   
   // User progress operations
   async getUserProgress(userId: string): Promise<UserProgress | undefined> {
-    const [progress] = await db.select()
-      .from(userProgress)
-      .where(eq(userProgress.userId, userId))
-      .orderBy(desc(userProgress.date))
-      .limit(1);
-    return progress;
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as UserProgress;
   }
   
   async updateUserProgress(userId: string, progressData: InsertUserProgress): Promise<UserProgress> {
-    const [progress] = await db.insert(userProgress)
-      .values({ ...progressData, userId })
-      .onConflictDoUpdate({
-        target: [userProgress.userId],
-        set: progressData,
-      })
-      .returning();
-    return progress;
+    const { data, error } = await supabase
+      .from('user_progress')
+      .upsert({ ...progressData, user_id: userId }, { onConflict: 'user_id' })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as UserProgress;
   }
   
   // Favorite workouts operations
   async addFavoriteWorkout(userId: string, workoutId: string): Promise<FavoriteWorkout> {
-    const [favorite] = await db.insert(favoriteWorkouts)
-      .values({ userId, workoutId })
-      .returning();
-    return favorite;
+    const { data, error } = await supabase
+      .from('favorite_workouts')
+      .insert({ user_id: userId, workout_id: workoutId })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as FavoriteWorkout;
   }
   
   async removeFavoriteWorkout(userId: string, workoutId: string): Promise<void> {
-    await db.delete(favoriteWorkouts)
-      .where(and(
-        eq(favoriteWorkouts.userId, userId),
-        eq(favoriteWorkouts.workoutId, workoutId)
-      ));
+    const { error } = await supabase
+      .from('favorite_workouts')
+      .delete()
+      .eq('user_id', userId)
+      .eq('workout_id', workoutId);
+    
+    if (error) throw error;
   }
   
   async getUserFavoriteWorkouts(userId: string): Promise<Workout[]> {
-    const result = await db.select()
-      .from(favoriteWorkouts)
-      .innerJoin(workouts, eq(favoriteWorkouts.workoutId, workouts.id))
-      .where(eq(favoriteWorkouts.userId, userId));
+    const { data, error } = await supabase
+      .from('favorite_workouts')
+      .select(`
+        workouts(*)
+      `)
+      .eq('user_id', userId);
     
-    return result.map(row => row.workouts);
+    if (error) throw error;
+    return data.map((row: any) => row.workouts) as Workout[];
   }
   
   async isWorkoutFavorited(userId: string, workoutId: string): Promise<boolean> {
-    const [favorite] = await db.select()
-      .from(favoriteWorkouts)
-      .where(and(
-        eq(favoriteWorkouts.userId, userId),
-        eq(favoriteWorkouts.workoutId, workoutId)
-      ));
-    return !!favorite;
+    const { data, error } = await supabase
+      .from('favorite_workouts')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('workout_id', workoutId)
+      .single();
+    
+    return !error && !!data;
   }
 
   // Helper function to extract Vimeo ID from URL
@@ -324,16 +412,24 @@ export class DatabaseStorage implements IStorage {
     const vimeoId = this.extractVimeoId(workoutData.vimeoUrl);
     
     const workout = {
-      ...workoutData,
+      title: workoutData.title,
+      description: workoutData.description,
       videoUrl: workoutData.vimeoUrl,
+      video_url: workoutData.vimeoUrl,
       vimeoId: vimeoId,
-      thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`, // Vimeo thumbnail service
+      vimeo_id: vimeoId,
+      thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`,
+      thumbnail_url: `https://vumbnail.com/${vimeoId}.jpg`, // Vimeo thumbnail service
       duration: 1800, // 30 minutes default
       calories: 200,
       rating: "4.5",
       difficulty: workoutData.difficulty || "intermediate",
       instructor: workoutData.instructor || "Instructor",
-      equipment: workoutData.equipment || "Bodyweight"
+      equipment: workoutData.equipment || "Bodyweight",
+      dayNumber: workoutData.dayNumber,
+      day_number: workoutData.dayNumber,
+      weekNumber: workoutData.weekNumber,
+      week_number: workoutData.weekNumber,
     };
     
     // Check if workout already exists for this day
@@ -428,8 +524,11 @@ export class DatabaseStorage implements IStorage {
         title: `Day ${day}: ${workoutType} Challenge`,
         description: `30-minute ${workoutType.toLowerCase()} workout for day ${day} of your fitness journey`,
         videoUrl: `https://vimeo.com/${vimeoId}`,
+        video_url: `https://vimeo.com/${vimeoId}`,
         vimeoId: vimeoId,
+        vimeo_id: vimeoId,
         thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`,
+        thumbnail_url: `https://vumbnail.com/${vimeoId}.jpg`,
         duration: 1800, // 30 minutes
         difficulty: day <= 30 ? "beginner" : day <= 60 ? "intermediate" : "advanced",
         calories: 200 + Math.floor(day / 10) * 20,
@@ -437,7 +536,9 @@ export class DatabaseStorage implements IStorage {
         instructor: instructors[typeIndex],
         rating: "4.5",
         dayNumber: day,
-        weekNumber: week
+        day_number: day,
+        weekNumber: week,
+        week_number: week
       };
       
       await this.createWorkout(workout);
@@ -445,23 +546,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkoutGroups(): Promise<{ title: string; count: number; days: number[] }[]> {
-    // Get all distinct workout titles and count how many days each appears
-    const results = await db
-      .select({
-        title: workouts.title,
-        dayNumber: workouts.dayNumber,
-      })
-      .from(workouts)
-      .where(sql`${workouts.title} IS NOT NULL AND ${workouts.dayNumber} IS NOT NULL`)
-      .orderBy(workouts.dayNumber);
+    const { data, error } = await supabase
+      .from('workouts')
+      .select('title, day_number')
+      .not('title', 'is', null)
+      .not('day_number', 'is', null)
+      .order('day_number');
+
+    if (error) throw error;
 
     // Group by title and collect day numbers
     const groupMap = new Map<string, number[]>();
-    for (const result of results) {
+    for (const result of data) {
       if (!groupMap.has(result.title)) {
         groupMap.set(result.title, []);
       }
-      groupMap.get(result.title)!.push(result.dayNumber!);
+      groupMap.get(result.title)!.push(result.day_number!);
     }
 
     // Convert to the expected format
@@ -483,18 +583,18 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Update all workouts with the specified name
-    const result = await db
-      .update(workouts)
-      .set({
-        vimeoId,
-        thumbnailUrl: `https://vumbnail.com/${vimeoId}.jpg`,
+    const { data, error } = await supabase
+      .from('workouts')
+      .update({
+        vimeo_id: vimeoId,
+        thumbnail_url: `https://vumbnail.com/${vimeoId}.jpg`,
       })
-      .where(eq(workouts.title, workoutName))
-      .returning({ id: workouts.id });
+      .eq('title', workoutName)
+      .select('id');
 
-    return { updatedCount: result.length };
+    if (error) throw error;
+    return { updatedCount: data.length };
   }
-
 
   // Challenge operations
   async startUserChallenge(userId: string): Promise<UserChallenge> {
@@ -505,28 +605,33 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Create new challenge
-    const [challenge] = await db
-      .insert(userChallenges)
-      .values({
-        userId,
-        startDate: new Date(),
-        currentDay: 1,
-        isActive: true,
-        completedDays: [],
+    const { data, error } = await supabase
+      .from('user_challenges')
+      .insert({
+        user_id: userId,
+        start_date: new Date().toISOString(),
+        current_day: 1,
+        is_active: true,
+        completed_days: [],
       })
-      .returning();
+      .select()
+      .single();
     
-    return challenge;
+    if (error) throw error;
+    return data as UserChallenge;
   }
 
   async getUserChallenge(userId: string): Promise<UserChallenge | undefined> {
-    const [challenge] = await db
-      .select()
-      .from(userChallenges)
-      .where(and(eq(userChallenges.userId, userId), eq(userChallenges.isActive, true)))
-      .orderBy(desc(userChallenges.createdAt));
+    const { data, error } = await supabase
+      .from('user_challenges')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .single();
     
-    return challenge;
+    if (error || !data) return undefined;
+    return data as UserChallenge;
   }
 
   async updateChallengeProgress(userId: string, dayNumber: number): Promise<UserChallenge> {
@@ -542,25 +647,27 @@ export class DatabaseStorage implements IStorage {
       : [...completedDays, dayNumber].sort((a, b) => a - b);
 
     // Calculate current day based on start date
-    const daysSinceStart = Math.floor((Date.now() - challenge.startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    const daysSinceStart = Math.floor((Date.now() - new Date(challenge.startDate).getTime()) / (24 * 60 * 60 * 1000)) + 1;
     const newCurrentDay = Math.min(daysSinceStart, 90);
 
     // Check if challenge is completed
     const isCompleted = updatedCompletedDays.length >= 90 || newCurrentDay > 90;
 
-    const [updatedChallenge] = await db
-      .update(userChallenges)
-      .set({
-        currentDay: newCurrentDay,
-        completedDays: updatedCompletedDays,
-        isActive: !isCompleted,
-        completedAt: isCompleted ? new Date() : null,
-        updatedAt: new Date(),
+    const { data, error } = await supabase
+      .from('user_challenges')
+      .update({
+        current_day: newCurrentDay,
+        completed_days: updatedCompletedDays,
+        is_active: !isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
       })
-      .where(eq(userChallenges.id, challenge.id))
-      .returning();
+      .eq('id', challenge.id)
+      .select()
+      .single();
 
-    return updatedChallenge;
+    if (error) throw error;
+    return data as UserChallenge;
   }
 
   async getTodaysWorkout(userId: string): Promise<Workout | undefined> {
@@ -570,16 +677,18 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Calculate current day based on start date
-    const daysSinceStart = Math.floor((Date.now() - challenge.startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    const daysSinceStart = Math.floor((Date.now() - new Date(challenge.startDate).getTime()) / (24 * 60 * 60 * 1000)) + 1;
     const currentDay = Math.min(daysSinceStart, 90);
 
     // Get workout for current day
-    const [workout] = await db
-      .select()
-      .from(workouts)
-      .where(eq(workouts.dayNumber, currentDay));
+    const { data, error } = await supabase
+      .from('workouts')
+      .select('*')
+      .eq('day_number', currentDay)
+      .single();
 
-    return workout;
+    if (error || !data) return undefined;
+    return data as Workout;
   }
 }
 

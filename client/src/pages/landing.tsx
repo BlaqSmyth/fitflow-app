@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dumbbell, Play, BarChart3, Users } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Landing() {
   return (
@@ -58,9 +59,9 @@ export default function Landing() {
 
             <Button 
               className="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-semibold text-lg shadow-lg shadow-primary/25"
-              onClick={() => window.location.href = '/api/login'}
+              asChild
             >
-              Get Started
+              <Link href="/login">Get Started</Link>
             </Button>
             
             <div className="text-center">

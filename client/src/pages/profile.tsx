@@ -22,7 +22,7 @@ import {
 
 export default function Profile() {
   const { toast } = useToast();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, signOut } = useAuth();
   const [, navigate] = useLocation();
 
   // Redirect to login if not authenticated
@@ -34,11 +34,11 @@ export default function Profile() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        navigate("/login");
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+  }, [isAuthenticated, isLoading, toast, navigate]);
 
   const { data: progress } = useQuery({
     queryKey: ["/api/progress"],
@@ -60,8 +60,9 @@ export default function Profile() {
     navigate("/");
   };
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
   };
 
   const userInitials = user?.firstName && user?.lastName 
@@ -248,6 +249,7 @@ export default function Profile() {
                 variant="ghost" 
                 className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
                 onClick={handleLogout}
+                data-testid="button-logout"
               >
                 <LogOut className="h-4 w-4 mr-3" />
                 Sign Out

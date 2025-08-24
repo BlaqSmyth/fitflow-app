@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./supabaseAuth";
 import { insertWorkoutSchema, insertExerciseSetSchema, insertUserWorkoutSessionSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -11,7 +11,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -70,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Progress
   app.get('/api/progress', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const progress = await storage.getUserProgress(userId);
       res.json(progress || { totalWorkouts: 0, totalCalories: 0, workoutStreak: 0 });
     } catch (error) {
@@ -82,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Challenge Management
   app.post('/api/challenge/start', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const challenge = await storage.startUserChallenge(userId);
       res.json(challenge);
     } catch (error) {
@@ -93,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/challenge', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const challenge = await storage.getUserChallenge(userId);
       res.json(challenge);
     } catch (error) {
@@ -104,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/challenge/today', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const workout = await storage.getTodaysWorkout(userId);
       res.json(workout);
     } catch (error) {
@@ -115,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/challenge/complete/:dayNumber', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const dayNumber = parseInt(req.params.dayNumber);
       const challenge = await storage.updateChallengeProgress(userId, dayNumber);
       res.json(challenge);
@@ -128,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workout Sessions
   app.post('/api/sessions', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const sessionData = insertUserWorkoutSessionSchema.parse({
         ...req.body,
         userId
@@ -144,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sessions/active', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const session = await storage.getActiveUserSession(userId);
       res.json(session);
     } catch (error) {
@@ -170,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sessions/completed', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const completedWorkouts = await storage.getCompletedWorkouts(userId);
       res.json(completedWorkouts);
     } catch (error) {
@@ -181,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sessions', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const sessions = await storage.getUserWorkoutSessions(userId);
       res.json(sessions);
     } catch (error) {
@@ -226,7 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Favorite Workouts
   app.post('/api/favorites', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { workoutId } = req.body;
       const favorite = await storage.addFavoriteWorkout(userId, workoutId);
       res.json(favorite);
@@ -238,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/favorites/:workoutId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       await storage.removeFavoriteWorkout(userId, req.params.workoutId);
       res.json({ message: "Favorite removed" });
     } catch (error) {
@@ -249,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/favorites', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const favorites = await storage.getUserFavoriteWorkouts(userId);
       res.json(favorites);
     } catch (error) {
@@ -260,7 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/favorites/:workoutId/check', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const isFavorited = await storage.isWorkoutFavorited(userId, req.params.workoutId);
       res.json({ isFavorited });
     } catch (error) {
