@@ -1,15 +1,12 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "client/dist/**/*",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
+  "buildCommand": "npm run build",
+  "outputDirectory": "client/dist",
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs18.x"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
@@ -17,11 +14,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/client/dist/$1"
+      "dest": "/index.html"
     }
-  ],
-  "outputDirectory": "client/dist",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "framework": "vite"
+  ]
 }
