@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "npx vite build",
   "outputDirectory": "client/dist",
   "functions": {
     "api/index.ts": {
