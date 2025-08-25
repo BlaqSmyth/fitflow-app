@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "framework": "vite",
+  "buildCommand": "npm install && npx vite build --config vite.config.ts",
   "outputDirectory": "dist/public",
   "functions": {
     "api/index.ts": {
