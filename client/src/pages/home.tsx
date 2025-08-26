@@ -246,14 +246,17 @@ export default function Home() {
 
 
         {/* Today's Workout */}
-        {challenge && todaysWorkout && (
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">Today's Workout</h2>
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white">Today's Workout</h2>
+            {challenge && challengeProgress && (
               <Badge className="bg-primary/20 text-primary">
-                Day {challengeProgress?.currentDay}
+                Day {challengeProgress.currentDay}
               </Badge>
-            </div>
+            )}
+          </div>
+          
+          {challenge && todaysWorkout ? (
             <Link href={`/workout-player/${todaysWorkout.id}`}>
               <Card className="bg-surface border-slate-700 overflow-hidden hover:border-primary/50 transition-colors cursor-pointer" data-testid="card-todays-workout">
                 <div className="aspect-video bg-slate-700 relative">
@@ -297,8 +300,42 @@ export default function Home() {
                 </CardContent>
               </Card>
             </Link>
-          </section>
-        )}
+          ) : (
+            <Card className="bg-surface border-slate-700">
+              <CardContent className="p-6 text-center">
+                {!challenge ? (
+                  <>
+                    <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Play className="w-6 h-6 text-white ml-1" />
+                    </div>
+                    <h3 className="font-bold text-lg text-white mb-2">Start Your 90-Day Challenge</h3>
+                    <p className="text-slate-400 text-sm mb-4">
+                      Begin your fitness transformation with our P90X3-inspired workout program
+                    </p>
+                    <Button 
+                      onClick={() => startChallengeMutation.mutate()}
+                      disabled={startChallengeMutation.isPending}
+                      className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                      data-testid="button-start-challenge"
+                    >
+                      {startChallengeMutation.isPending ? "Starting..." : "Start Challenge"}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Clock className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <h3 className="font-bold text-lg text-white mb-2">No Workout Today</h3>
+                    <p className="text-slate-400 text-sm mb-4">
+                      Check back later or explore our featured workouts below
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </section>
 
         {/* Featured Workouts */}
         <section>
