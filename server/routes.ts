@@ -83,11 +83,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/challenge/start', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      console.log("Starting challenge for user:", userId);
+      
+      // First ensure we have workout data
+      const workoutsCount = await storage.getWorkoutsCount();
+      console.log("Available workouts count:", workoutsCount);
+      
+      if (workoutsCount === 0) {
+        console.log("No workouts found, seeding database...");
+        await storage.seedInitialData();
+        console.log("Database seeded with workout data");
+      }
+      
       const challenge = await storage.startUserChallenge(userId);
+      console.log("Challenge created successfully:", challenge.id);
       res.json(challenge);
     } catch (error) {
       console.error("Error starting challenge:", error);
-      res.status(500).json({ message: "Failed to start challenge" });
+      res.status(500).json({ message: "Failed to start challenge", error: error.message });
     }
   });
 

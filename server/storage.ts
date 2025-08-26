@@ -167,6 +167,12 @@ export class DatabaseStorage implements IStorage {
       createdAt: workout.created_at,
     })) as Workout[];
   }
+
+  async getWorkoutsCount(): Promise<number> {
+    const { count, error } = await supabase.from('workouts').select('*', { count: 'exact', head: true });
+    if (error) throw error;
+    return count || 0;
+  }
   
   async getWorkout(id: string): Promise<Workout | undefined> {
     const { data, error } = await supabase
@@ -735,7 +741,20 @@ export class DatabaseStorage implements IStorage {
       .single();
     
     if (error) throw error;
-    return data as UserChallenge;
+    
+    // Convert snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      startDate: data.start_date,
+      currentDay: data.current_day,
+      isActive: data.is_active,
+      completedDays: data.completed_days || [],
+      pausedAt: data.paused_at,
+      completedAt: data.completed_at,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    } as UserChallenge;
   }
 
   async getUserChallenge(userId: string): Promise<UserChallenge | undefined> {
