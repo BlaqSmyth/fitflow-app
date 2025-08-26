@@ -74,6 +74,10 @@ export default function Home() {
     enabled: !!challenge && isAuthenticated,
   });
 
+  // Debug logging to see what data we're getting
+  console.log("Challenge data:", challenge);
+  console.log("Today's workout data:", todaysWorkout);
+
   const queryClient = useQueryClient();
 
   const startChallengeMutation = useMutation({

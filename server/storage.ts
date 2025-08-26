@@ -790,13 +790,14 @@ export class DatabaseStorage implements IStorage {
   async getTodaysWorkout(userId: string): Promise<Workout | undefined> {
     const challenge = await this.getUserChallenge(userId);
     if (!challenge) {
+      console.log("No challenge found for user:", userId);
       return undefined;
     }
 
-    // Calculate current day based on start date
-    const startDate = new Date(challenge.startDate);
-    const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
-    const currentDay = Math.min(daysSinceStart, 90);
+    // Use the current_day from the challenge record instead of recalculating
+    const currentDay = challenge.currentDay;
+    
+    console.log("Getting workout for day:", currentDay, "from challenge:", challenge.id);
 
     // Get workout for current day
     const { data, error } = await supabase
@@ -805,7 +806,12 @@ export class DatabaseStorage implements IStorage {
       .eq('day_number', currentDay)
       .single();
 
-    if (error || !data) return undefined;
+    console.log("Database query result:", { data: !!data, error: error?.message, searchedDay: currentDay });
+    
+    if (error || !data) {
+      console.log("No workout found for day", currentDay, "Error:", error?.message);
+      return undefined;
+    }
     
     // Convert snake_case to camelCase for TypeScript
     return {
