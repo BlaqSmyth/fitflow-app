@@ -748,7 +748,20 @@ export class DatabaseStorage implements IStorage {
       .single();
     
     if (error || !data) return undefined;
-    return data as UserChallenge;
+    
+    // Convert snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      startDate: data.start_date,
+      currentDay: data.current_day,
+      isActive: data.is_active,
+      completedDays: data.completed_days || [],
+      pausedAt: data.paused_at,
+      completedAt: data.completed_at,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    } as UserChallenge;
   }
 
   async updateChallengeProgress(userId: string, dayNumber: number): Promise<UserChallenge> {
