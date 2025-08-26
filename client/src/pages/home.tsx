@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { 
   Play, 
   Star, 
@@ -35,6 +35,7 @@ interface UserProgress {
 export default function Home() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [, navigate] = useLocation();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -158,7 +159,8 @@ export default function Home() {
             variant="ghost" 
             size="icon" 
             className="text-slate-400 hover:text-white"
-            onClick={() => window.location.href = '/api/logout'}
+            onClick={() => navigate('/profile')}
+            data-testid="button-profile"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
