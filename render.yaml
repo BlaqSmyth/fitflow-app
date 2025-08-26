@@ -2,8 +2,11 @@ services:
   - type: web
     name: fitflow-app
     env: node
-    buildCommand: npm install && npm run build
+    plan: starter
+    region: oregon
+    buildCommand: chmod +x build.sh && ./build.sh
     startCommand: npm start
+    healthCheckPath: /
     envVars:
       - key: NODE_ENV
         value: production
