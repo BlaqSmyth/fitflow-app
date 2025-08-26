@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: fitflow-app
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fitflow-db
+          property: connectionString
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: REPL_ID
+        generateValue: true
+      - key: ISSUER_URL
+        value: https://replit.com/oidc
+      - key: REPLIT_DOMAINS
+        value: fitflow-app-tdmi.onrender.com
+
+databases:
+  - name: fitflow-db
+    databaseName: fitflow
+    user: fitflow
