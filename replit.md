@@ -6,6 +6,12 @@ FitFlow is a P90X3-inspired fitness application featuring a complete 90-day work
 
 ## Recent Changes
 
+### Today's Workout Video Display Fix (August 26, 2025)
+- **Database Field Mapping**: Fixed critical bug where snake_case database fields (current_day) weren't properly mapped to camelCase TypeScript interfaces (currentDay)
+- **Today's Workout API**: Resolved issue where getTodaysWorkout function returned null due to undefined currentDay field
+- **Challenge Data Conversion**: Implemented proper field name conversion in getUserChallenge function to ensure all snake_case database fields are correctly mapped to camelCase interface properties
+- **Video Display**: Today's Workout section now correctly displays Day 1 workout video with thumbnail, title, and metadata
+
 ### P90X3-Style 90-Day Challenge Implementation (January 2025)
 - **Database Schema Updates**: Enhanced workouts table with `dayNumber` (1-90) and `weekNumber` (1-13) fields for structured challenge progression
 - **90-Day Workout Structure**: Created 90 unique 30-minute workout videos organized across 4 rotating categories
