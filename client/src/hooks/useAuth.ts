@@ -31,14 +31,26 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // Handle email confirmation tokens from URL
+    // Handle email confirmation tokens from URL (query params or hash)
     const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('access_token');
-    const refreshToken = urlParams.get('refresh_token');
-    const type = urlParams.get('type');
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    
+    const accessToken = urlParams.get('access_token') || hashParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token') || hashParams.get('refresh_token');
+    const type = urlParams.get('type') || hashParams.get('type');
+    const tokenHash = urlParams.get('token_hash') || hashParams.get('token_hash');
 
-    if (accessToken && refreshToken && type === 'signup') {
-      // Set the session using the tokens from email confirmation
+    // Handle Supabase email confirmation
+    if (tokenHash && type) {
+      // New Supabase auth flow - let Supabase handle the session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setIsLoading(false);
+        // Clean up URL
+        window.history.replaceState({}, document.title, '/');
+      });
+    } else if (accessToken && refreshToken) {
+      // Legacy flow or manual token handling
       supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken
@@ -61,6 +73,11 @@ export function useAuth() {
       (event, session) => {
         setSession(session);
         setIsLoading(false);
+        
+        // Handle email confirmation events
+        if (event === 'SIGNED_IN' && session) {
+          console.log('User signed in via email confirmation');
+        }
       }
     );
 

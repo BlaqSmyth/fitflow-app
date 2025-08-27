@@ -10,20 +10,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Email confirmation redirect route
   app.get('/auth/confirm', (req, res) => {
-    const { access_token, refresh_token, error, error_description } = req.query;
+    const { access_token, refresh_token, error, error_description, token_hash, type } = req.query;
     
     if (error) {
       console.error('Email confirmation error:', error_description);
       return res.redirect(`/login?error=${encodeURIComponent(error_description as string)}`);
     }
     
-    if (access_token && refresh_token) {
-      // Redirect to the main app with tokens - the client will handle them
+    // Handle different confirmation types
+    if (token_hash && type) {
+      // New Supabase format - redirect with hash fragment  
+      res.redirect(`/?#access_token=${access_token || ''}&refresh_token=${refresh_token || ''}&token_hash=${token_hash}&type=${type}`);
+    } else if (access_token && refresh_token) {
+      // Legacy format - redirect with query params
       res.redirect(`/?access_token=${access_token}&refresh_token=${refresh_token}&type=signup`);
     } else {
       // Redirect to login if no tokens
       res.redirect('/login?message=Please+check+your+email+and+click+the+confirmation+link');
     }
+  });
+
+  // Catch localhost redirects and forward to production
+  app.get('/auth/callback', (req, res) => {
+    // This catches any localhost callback URLs
+    const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+    res.redirect(`/auth/confirm?${queryString}`);
   });
 
   // Auth routes
