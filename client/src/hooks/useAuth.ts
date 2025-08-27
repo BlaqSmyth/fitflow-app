@@ -31,11 +31,30 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsLoading(false);
-    });
+    // Handle email confirmation tokens from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token');
+    const type = urlParams.get('type');
+
+    if (accessToken && refreshToken && type === 'signup') {
+      // Set the session using the tokens from email confirmation
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      }).then(({ data: { session } }) => {
+        setSession(session);
+        setIsLoading(false);
+        // Clean up URL params
+        window.history.replaceState({}, document.title, '/');
+      });
+    } else {
+      // Get initial session normally
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setIsLoading(false);
+      });
+    }
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -56,7 +75,13 @@ export function useAuth() {
     signIn: (email: string, password: string) => 
       supabase.auth.signInWithPassword({ email, password }),
     signUp: (email: string, password: string) => 
-      supabase.auth.signUp({ email, password }),
+      supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          emailRedirectTo: window.location.origin + '/auth/confirm'
+        }
+      }),
     signOut: () => supabase.auth.signOut(),
   };
 }

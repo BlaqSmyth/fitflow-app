@@ -8,6 +8,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Email confirmation redirect route
+  app.get('/auth/confirm', (req, res) => {
+    const { access_token, refresh_token, error, error_description } = req.query;
+    
+    if (error) {
+      console.error('Email confirmation error:', error_description);
+      return res.redirect(`/login?error=${encodeURIComponent(error_description as string)}`);
+    }
+    
+    if (access_token && refresh_token) {
+      // Redirect to the main app with tokens - the client will handle them
+      res.redirect(`/?access_token=${access_token}&refresh_token=${refresh_token}&type=signup`);
+    } else {
+      // Redirect to login if no tokens
+      res.redirect('/login?message=Please+check+your+email+and+click+the+confirmation+link');
+    }
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
@@ -100,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(challenge);
     } catch (error) {
       console.error("Error starting challenge:", error);
-      res.status(500).json({ message: "Failed to start challenge", error: error.message });
+      res.status(500).json({ message: "Failed to start challenge", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
